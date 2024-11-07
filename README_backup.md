@@ -12,7 +12,6 @@
 
 ## Contents
 - [Install](#install)
-- [Data](#data)
 - [Training](#training)
 - [Evaluation](#evaluation)
 
@@ -24,15 +23,6 @@ cd HallE_Control
 ```
 
 2. Install Package
-```Shell
-conda create -n halle python=3.10 -y
-conda activate halle
-bash scripts/run.sh
-```
-
-## Data
-
-1. ln data
 ```Shell
 conda create -n halle python=3.10 -y
 conda activate halle
@@ -63,8 +53,31 @@ bash scripts/v1_5/finetune_indication.sh
 
 ## Evaluation
 
-1. CHAIR
+Here, we provide the procedure of evaluating any model on CCEval.
+
+1. Download VisualGenome images [part 1](https://cs.stanford.edu/people/rak248/VG_100K_2/images.zip), [part 2](https://cs.stanford.edu/people/rak248/VG_100K_2/images2.zip), and [objects](https://homes.cs.washington.edu/~ranjay/visualgenome/data/dataset/objects.json.zip); unzip to ./data folder
+
+2. Obtain captions of your model for 100 VG images. For example, you can obtain captions of controller model by using the following script:
+
+```Shell
+bash scripts/v1_5/model_control_eval.sh
+```
+3. Get CCEval results (without coverage) by running:
 
 ```Shell
 python3 cceval.py --cap_file [YOUR_CAPTION_FILE_PATH] --key [YOUR_OPENAI_API_KEY]
 ```
+
+## Citation
+
+If you find HallE-Control useful for your research and applications, please cite using this BibTeX:
+```bibtex
+
+@misc{zhai2023halleswitch,
+      title={HallE-Switch: Controlling Object Hallucination in Large Vision Language Models}, 
+      author={Bohan Zhai and Shijia Yang and Chenfeng Xu and Sheng Shen and Kurt Keutzer and Manling Li},
+      year={2023},
+      eprint={2310.01779},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
