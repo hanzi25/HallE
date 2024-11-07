@@ -32,9 +32,9 @@ def save_result(path, args, results):
     current_time = f"{now.month}{now.day}{time}"
 
     if args.model_version == 'llava_control':
-        save_file = f"{path}/{args.model_version}_{args.sigma}_{current_time}.json"
+        save_file = f"{path}/{args.model_version}_{args.sigma}_{current_time}.jsonl"
     else:
-        save_file = f"{path}/{args.model_version}_{current_time}.json"
+        save_file = f"{path}/{args.model_version}_{current_time}.jsonl"
 
     with open(save_file, "w") as file:
         for res in results:
@@ -189,7 +189,7 @@ def eval_model(args):
             'image_file':image_file, 
             'caption':outputs
             })
-        print(id, outputs)
+        print(image_id, outputs)
 
     save_result(path, args, results)
 

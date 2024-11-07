@@ -65,12 +65,13 @@ bash scripts/v1_5/model_control_eval.sh
 ```
 
 
-- Calculate CHAIR score.(TODO)
+- Calculate CHAIR score.
 ```Shell
-CUDA_VISIBLE_DEVICES=5 python chair.py \
---cap_file /raid_sdd/whz/experiments/halle/inference/llava/ours.jsonl \
---image_id_key image_id \
---caption_key caption \
---coco_path  \
---save_path /raid_sdd/whz/experiments/halle/inference/llava/CHAIR.json
+bash eval_chair.sh
 ```
+
+
+# Others
+
+1. 显存占用
+纯推理显存占用：15802MiB 
