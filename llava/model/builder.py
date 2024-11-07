@@ -17,6 +17,7 @@ import os
 import warnings
 import shutil
 
+import transformers
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, BitsAndBytesConfig
 import torch
 from llava.model import *
@@ -107,7 +108,15 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
                     print("Loading controller model...")
                     model = LlavaLlamaControllerForCausalLM.from_pretrained(model_path, low_cpu_mem_usage=True, **kwargs)
                 else:
-                    model = LlavaLlamaForCausalLM.from_pretrained(model_path, low_cpu_mem_usage=True, **kwargs)
+                    print("Loading raw LLaVA model...")
+                    config = transformers.AutoConfig.from_pretrained(model_path, trust_remote_code=True)
+                    config.mm_vision_tower = "/raid_sdd/whz/model/clip_vit_large_patch14_336"
+                    print(config)
+                    model = LlavaLlamaForCausalLM.from_pretrained(
+                        model_path, 
+                        config=config,
+                        low_cpu_mem_usage=True, 
+                        **kwargs)
     else:
         # Load language model
         if model_base is not None:

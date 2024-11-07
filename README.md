@@ -1,13 +1,11 @@
-# HallE-Control: Controlling Object Hallucination in Large Mutimodal Models
+# Hallucination Control
 
-[[Paper](https://arxiv.org/pdf/2310.01779v3.pdf)] [[Project Page](https://bohanzhai.github.io/halle-switch.github.io/)] <br>
-[Bohan Zhai*](https://www.linkedin.com/in/bohan-zhai-202507154/), [Shijia Yang*](https://bronyayang.github.io/personal_website/), [Chenfeng Xu](https://www.chenfengx.com/), [Sheng Shen](https://sincerass.github.io/), [Kurt Keutzer](https://people.eecs.berkeley.edu/~keutzer/), [Chunyuan Li](https://chunyuan.li/), [Manling Li](https://limanling.github.io/)
+## Reference
 
+[[HallE-Control: Controlling Object Hallucination in Large Mutimodal Models](https://arxiv.org/pdf/2310.01779v3.pdf)] [[Project Page](https://bohanzhai.github.io/halle-switch.github.io/)] <br>
 
-## Release
-- [3/28] We release the full training and eval code. Welcome any question!
+Paper:
 - [3/27] 🔥 We released the new version **HallE-Control: Controlling Object Hallucination in LMMs**. Checkout the [paper](https://arxiv.org/pdf/2310.01779v3.pdf).
-- [12/13] We add CCEval's code for evaluation object existence hallucination.
 - [12/3] 🔥 We released **HallE-Switch: Controlling Object Hallucination in LVLMs**. Checkout the [paper](https://arxiv.org/abs/2310.01779).
 
 ## Contents
@@ -31,12 +29,8 @@ bash scripts/run.sh
 ```
 
 ## Data
-
-1. ln data
 ```Shell
-conda create -n halle python=3.10 -y
-conda activate halle
-bash scripts/run.sh
+
 ```
 
 ## Training
@@ -65,6 +59,18 @@ bash scripts/v1_5/finetune_indication.sh
 
 1. CHAIR
 
+- Generate captions for images.
 ```Shell
-python3 cceval.py --cap_file [YOUR_CAPTION_FILE_PATH] --key [YOUR_OPENAI_API_KEY]
+bash scripts/v1_5/model_control_eval.sh
+```
+
+
+- Calculate CHAIR score.(TODO)
+```Shell
+CUDA_VISIBLE_DEVICES=5 python chair.py \
+--cap_file /raid_sdd/whz/experiments/halle/inference/llava/ours.jsonl \
+--image_id_key image_id \
+--caption_key caption \
+--coco_path  \
+--save_path /raid_sdd/whz/experiments/halle/inference/llava/CHAIR.json
 ```

@@ -1,17 +1,17 @@
-deepspeed --master_port 25001 --num_nodes=1 --num_gpus=8 llava/train/train_switch_mem.py \
+deepspeed --include localhost:1 --master_port 25001 llava/train/train_switch_mem.py \
     --deepspeed ./scripts/zero3.json \
-    --model_name_or_path ./REPLACE_TO_LLAVA_PATH \
+    --model_name_or_path /raid_sdd/whz/model/llava_1_5 \
     --version v1 \
-    --data_path ./data/detail_switch_23k.json \
-    --image_folder ./REPLACE_TO_IMAGE_FOLDER_PATH \
-    --vision_tower openai/clip-vit-large-patch14-336 \
+    --data_path /raid_sdd/zzy/data/halle/detail_switch_23k.json \
+    --image_folder /raid_sdd/zzy/data/halle/coco/train2017 \
+    --vision_tower /raid_sdd/whz/model/clip_vit_large_patch14_336 \
     --mm_projector_type mlp2x_gelu \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
     --image_aspect_ratio pad \
     --bf16 True \
-    --output_dir ./controller_results \
+    --output_dir /home/zzy/HallE_Control/controller_results \
     --num_train_epochs 1 \
     --per_device_train_batch_size 32 \
     --per_device_eval_batch_size 4 \

@@ -15,8 +15,7 @@ import requests
 from PIL import Image
 from io import BytesIO
 import json
-
-
+import random
 import datetime
 
 def load_image(image_file):
@@ -28,7 +27,6 @@ def load_image(image_file):
     return image
 
 def save_result(path, args, results):
-    import datatime
     now = datetime.datetime.now()
     time = now.strftime("%H%M%S")
     current_time = f"{now.month}{now.day}{time}"
@@ -98,37 +96,64 @@ def eval_model(args):
             if not os.path.isfile(image_file):
                 image_file = f'{args.image_path}/images/VG_100K/{id}.jpg'
             image_files.append(image_file)
-        return image_files
+        return image_files, image_ids
 
 
     def load_coco_evaluation_file(args, number=500):
+        # annotation_file: args.gt_file_path ( /raid_sdd/zzy/data/halle/coco/coco2014/annotations/instances_val2014.json )
+        # image_path: args.image_path ()
+        
+        # load image
         img_files = os.listdir(args.image_path)
-        random.shuffle(img_files)
 
-        with open(args.image_path + '../annotations_trainval2014/annotations/instances_val2014.json', 'r') as f:
+        # load annotation and build img_dict
+        coco_instance_path = args.gt_file_path
+        with open(coco_instance_path, 'r') as f:
             lines = f.readlines()
         coco_anns = json.loads(lines[0])
-
         img_dict = {}
-
         categories = coco_anns["categories"]
-        category_names = [c["name"] for c in categories]
         category_dict = {int(c["id"]): c["name"] for c in categories}
-
         for img_info in coco_anns["images"]:
             img_dict[img_info["id"]] = {"name": img_info["file_name"], "anns": []}
+            
+        # for ann_info in coco_anns["annotations"]:
+        #     img_dict[ann_info["image_id"]]["anns"].append(
+        #         category_dict[ann_info["category_id"]]
+        #     )
+        
+        # select image and build image_files        
+        image_ids = list(img_dict.keys())[:number]
+        image_files = list()
+        for image_id in tqdm(image_ids):
+            image_name = f'COCO_val2014_{str(image_id).zfill(12)}.jpg'
+            if image_name in img_files:
+                image_file = f'{args.image_path}/{image_name}'
+                image_files.append(image_file)
 
-        for ann_info in coco_anns["annotations"]:
-            img_dict[ann_info["image_id"]]["anns"].append(
-                category_dict[ann_info["category_id"]]
-            )
+        print("Total number of image is ", len(image_files))
+        
+        return image_files, image_ids
 
-        return image_files
+    # ========================================
+    #      load image files and annotation
+    # ========================================
+    print("Start loading image files...")
+    if 'coco' in args.image_path:
+        image_files, image_ids = load_coco_evaluation_file(args)
+    elif 'vg' in args.image_path:
+        image_files, image_ids = load_vg_evaluation_file(args)
+    else:
+        print("Not support such image path: ", args.image_path)
+        return
 
-    image_files = load_vg_evaluation_file(args)
-
+    # ========================================
+    #             Inference
+    # ========================================
     results = []
-    for image_file in tqdm(image_files):
+    for i in tqdm(range(len(image_files))):
+        image_file = image_files[i]
+        image_id = image_ids[i]
 
         image = load_image(image_file)
         image_tensor = image_processor.preprocess(image, return_tensors='pt')['pixel_values'].half().cuda()
@@ -160,8 +185,8 @@ def eval_model(args):
             outputs = outputs[:-len(stop_str)]
         outputs = outputs.strip()
         results.append({
-            'image_id':id, 
-            'path':image_file, 
+            'image_id':image_id,
+            'image_file':image_file, 
             'caption':outputs
             })
         print(id, outputs)
@@ -175,8 +200,8 @@ if __name__ == "__main__":
     parser.add_argument("--model-base", type=str, default=None)
     parser.add_argument("--model-version", type=str, default="llava") # llava & llava_control 
     parser.add_argument("--sigma", type=float, default=0)
-    parser.add_argument("--gt_file_path", type=str, default='./data/VisualGenome_task')
-    parser.add_argument("--image_path", type=str, default='./data')
+    parser.add_argument("--gt_file_path", type=str, default='/raid_sdd/zzy/data/halle/coco/coco2014/annotations/instances_val2014.json')
+    parser.add_argument("--image_path", type=str, default='/raid_sdd/zzy/data/halle/coco/coco2014/val2014')
     parser.add_argument("--query", type=str, default="Describe this image as detail as possible.")
     parser.add_argument("--conv-mode", type=str, default='v1')
     parser.add_argument("--output_folder", type=str, default='./')
