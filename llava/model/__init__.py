@@ -1,3 +1,4 @@
 from .language_model.llava_llama import LlavaLlamaForCausalLM, LlavaConfig
 from .language_model.llava_llama_switch import LlavaLlamaControllerForCausalLM, ControllerConfig
+from .language_model.llava_llama_verifier import LlavaLlamaVerifierForCausalLM, VerifierConfig
 from .language_model.llava_mpt import LlavaMPTForCausalLM, LlavaMPTConfig

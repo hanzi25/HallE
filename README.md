@@ -10,7 +10,6 @@ Paper:
 
 ## Contents
 - [Install](#install)
-- [Data](#data)
 - [Training](#training)
 - [Evaluation](#evaluation)
 
@@ -28,17 +27,25 @@ conda activate halle
 bash scripts/run.sh
 ```
 
-## Data
+3. Install nltk
 ```Shell
-
+import nltk
+nltk.download('punkt_tab')
+nltk.download('averaged_perceptron_tagger_eng')
+nltk.download('wordnet')
 ```
+
 
 ## Training
 
+### Train Controller
+
 1. Prepare data
 
-Follow [LLaVA](https://github.com/haotian-liu/LLaVA?tab=readme-ov-file#visual-instruction-tuning) to prepare data.
+- Follow [LLaVA](https://github.com/haotian-liu/LLaVA?tab=readme-ov-file#visual-instruction-tuning) to prepare data.
 Download controller data [here](https://drive.google.com/drive/folders/1ZxRE2BNVgWXNSjPv5fv6gw4JzwKeXU4b?usp=sharing) and put in ./data folder.
+
+- data_file: /raid_sdd/whz/data/halle/detail_switch_23k.json
 
 2. Start training
 
@@ -47,23 +54,34 @@ Download controller data [here](https://drive.google.com/drive/folders/1ZxRE2BNV
 ```Shell
 bash scripts/v1_5/tune_controller.sh
 ```
-Make sure the output_dir contains the word "controller" for correct inference behavior.
+Make sure the output_dir contains the word "llava" and "controller" for correct inference behavior.
 
-- Train indication: Model can output caption with [object] indication on imagined objects
+### Train Vision Verifier
+
+1. Prepare data
+
+- Extract samples whose caption has grounded objects.("hall_factor"=-1)
+
+- data_file: /raid_sdd/whz/data/halle/detail_switch_minus_1_9093.json
+
+2. Start trainning
+
+- Train vision verifier: llava/model/language_model/llava_llama_verifier.py
 
 ```Shell
-bash scripts/v1_5/finetune_indication.sh
+bash scripts/v1_5/tune_verifier.sh
 ```
+
 
 ## Evaluation
 
 1. CHAIR
 
 - Generate captions for images.
+
 ```Shell
 bash scripts/v1_5/model_control_eval.sh
 ```
-
 
 - Calculate CHAIR score.
 ```Shell
@@ -73,5 +91,12 @@ bash eval_chair.sh
 
 # Others
 
-1. 显存占用
-纯推理显存占用：15802MiB 
+1. 训练时间 & 显存占用
+- llava verifier 训练：
+    - 两卡：50 min 
+    - 33422MiB / 49140MiB 
+    - 22810MiB / 46068MiB
+
+
+2. 推理时间 & 现存占用
+- llava 纯推理显存占用：15802MiB 

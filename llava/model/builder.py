@@ -24,7 +24,7 @@ from llava.model import *
 from llava.constants import DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
 
 
-def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, load_4bit=False, device_map="auto", device="cuda"):
+def load_pretrained_model(model_path, model_base, model_name, model_version, model_vision=None,load_8bit=False, load_4bit=False, device_map="auto", device="cuda"):
     kwargs = {"device_map": device_map}
 
     if load_8bit:
@@ -90,8 +90,10 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
             else:
                 tokenizer = AutoTokenizer.from_pretrained(model_base, use_fast=False)
                 cfg_pretrained = AutoConfig.from_pretrained(model_path)
-                if 'controller' in model_name.lower():
+                if model_version == 'llava_controller':
                     model = LlavaLlamaControllerForCausalLM.from_pretrained(model_base, low_cpu_mem_usage=True, config=cfg_pretrained, **kwargs)
+                elif model_version == 'llava_verifier':
+                    model = LlavaLlamaVerifierForCausalLM.from_pretrained(model_base, low_cpu_mem_usage=True, config=cfg_pretrained, **kwargs)
                 else:
                     model = LlavaLlamaForCausalLM.from_pretrained(model_base, low_cpu_mem_usage=True, config=cfg_pretrained, **kwargs)
 
@@ -104,19 +106,32 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
                 model = LlavaMPTForCausalLM.from_pretrained(model_path, low_cpu_mem_usage=True, **kwargs)
             else:
                 tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
-                if 'controller' in model_name.lower():
+                config = transformers.AutoConfig.from_pretrained(model_path, trust_remote_code=True)
+                config.mm_vision_tower = model_vision
+                print(config)
+                
+                if model_version == 'llava_controller':                
                     print("Loading controller model...")
-                    model = LlavaLlamaControllerForCausalLM.from_pretrained(model_path, low_cpu_mem_usage=True, **kwargs)
+                    model = LlavaLlamaControllerForCausalLM.from_pretrained(
+                        model_path, 
+                        config=config,
+                        low_cpu_mem_usage=True, 
+                        **kwargs)
+                elif model_version == "llava_verifier":
+                    print("Loading vision verifier model...")
+                    model = LlavaLlamaVerifierForCausalLM.from_pretrained(
+                        model_path, 
+                        config=config,
+                        low_cpu_mem_usage=True, 
+                        **kwargs)
                 else:
                     print("Loading raw LLaVA model...")
-                    config = transformers.AutoConfig.from_pretrained(model_path, trust_remote_code=True)
-                    config.mm_vision_tower = "/raid_sdd/whz/model/clip_vit_large_patch14_336"
-                    print(config)
                     model = LlavaLlamaForCausalLM.from_pretrained(
                         model_path, 
                         config=config,
                         low_cpu_mem_usage=True, 
                         **kwargs)
+
     else:
         # Load language model
         if model_base is not None:
@@ -162,3 +177,5 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
         context_len = 2048
 
     return tokenizer, model, image_processor, context_len
+
+

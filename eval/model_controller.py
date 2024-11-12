@@ -31,7 +31,7 @@ def save_result(path, args, results):
     time = now.strftime("%H%M%S")
     current_time = f"{now.month}{now.day}{time}"
 
-    if args.model_version == 'llava_control':
+    if args.model_version == 'llava_controller':
         save_file = f"{path}/{args.model_version}_{args.sigma}_{current_time}.jsonl"
     else:
         save_file = f"{path}/{args.model_version}_{current_time}.jsonl"
@@ -49,9 +49,9 @@ def eval_model(args):
     model_path = args.model_path
     disable_torch_init()
     model_name = get_model_name_from_path(model_path)
-    tokenizer, model, image_processor, context_len = load_pretrained_model(model_path, args.model_base, model_name)
+    tokenizer, model, image_processor, context_len = load_pretrained_model(model_path, args.model_base, model_name, args.model_version, args.model_vision)
     
-    if args.model_version == 'llava_control':
+    if args.model_version == 'llava_controller':
         model.sigma = args.sigma
     model = model.cuda()
     qs = args.query
@@ -198,11 +198,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-path", type=str, default="facebook/opt-350m")
     parser.add_argument("--model-base", type=str, default=None)
-    parser.add_argument("--model-version", type=str, default="llava") # llava & llava_control 
+    parser.add_argument("--model-version", type=str, default="llava") # llava & llava_controller & llava_verifier
+    parser.add_argument("--model-vision", type=str, default="/raid_sdd/whz/model/clip_vit_large_patch14_336")
     parser.add_argument("--sigma", type=float, default=0)
     parser.add_argument("--gt_file_path", type=str, default='/raid_sdd/zzy/data/halle/coco/coco2014/annotations/instances_val2014.json')
     parser.add_argument("--image_path", type=str, default='/raid_sdd/zzy/data/halle/coco/coco2014/val2014')
-    parser.add_argument("--query", type=str, default="Describe this image as detail as possible.")
+    parser.add_argument("--query", type=str, default="Describe this image as detailed as possible.")
     parser.add_argument("--conv-mode", type=str, default='v1')
     parser.add_argument("--output_folder", type=str, default='./')
     args = parser.parse_args()

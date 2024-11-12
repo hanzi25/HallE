@@ -18,6 +18,7 @@ from typing import List, Optional, Tuple, Union
 import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss
+import torch.nn.functional as F
 
 from transformers import AutoConfig, AutoModelForCausalLM, \
                          LlamaConfig, LlamaModel, LlamaForCausalLM
@@ -31,18 +32,40 @@ from .llava_llama import LlavaLlamaModel
 class VerifierConfig(LlamaConfig):
     model_type = "llava_vision_verifier"
 
+class CrossAttention(nn.Module):
+    def __init__(self, hidden_size):
+        super(CrossAttention, self).__init__()
+        self.W_q = nn.Linear(hidden_size, hidden_size, bias=False)
+        self.W_k = nn.Linear(hidden_size, hidden_size, bias=False)
+        self.W_v = nn.Linear(hidden_size, hidden_size, bias=False)
+        self.scaling = hidden_size ** -0.5
+            
+    def forward(self, query, key, value):
+        query = self.W_q(query)
+        key = self.W_k(key)
+        value = self.W_v(value)
+        
+        scores = torch.matmul(query, key.transpose(-2, -1)) * self.scaling
+        attn = F.softmax(scores, dim=-1)
+        context = torch.matmul(attn, value)
+        
+        return context        
 
-
-class LlavaLlamaControllerForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
-    config_class = ControllerConfig
+class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
+    config_class = VerifierConfig
 
     def __init__(self, config):
         super(LlamaForCausalLM, self).__init__(config)
         self.model = LlavaLlamaModel(config)
-        self.W = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
-        self.sigma = 0
+        # self.W = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
+        
+        self.cross_attn = CrossAttention(config.hidden_size)
+        self.alpha = nn.Parameter(torch.zeros(config.hidden_size)) # gating
+        
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
-
+        
+        self.tmp_new_vision_embeds = None
+        
         # Initialize weights and apply final processing
         self.post_init()
 
@@ -69,8 +92,18 @@ class LlavaLlamaControllerForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         )
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        input_ids, attention_mask, past_key_values, inputs_embeds, labels = self.prepare_inputs_labels_for_multimodal(input_ids, attention_mask, past_key_values, labels, images)
-
+        # text input_ids -> model.embed_tokens
+        # images -> mm_projector(vision_tower(images))
+        # concat text_embedding and image_embedding to inputs_embeds
+        
+        # import pdb; pdb.set_trace()
+        
+        input_ids, attention_mask, past_key_values, inputs_embeds, labels, new_vision_embeds, length_group = self.prepare_inputs_labels_for_multimodal(input_ids, attention_mask, past_key_values, labels, images, output_vision_embed=True)
+        # length_group = (system_len, image_len, user_query_len)
+        # new_vision_embeds.shape = [bz, image_len, 4096], image_len = 576
+        
+        # import pdb; pdb.set_trace()
+        
         # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
         outputs = self.model(
             input_ids=input_ids,
@@ -84,19 +117,45 @@ class LlavaLlamaControllerForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         )
 
         hidden_states = outputs[0]
+        
+        ##############################
+        ## Vision Verifier
+        ##############################
+        
+        if input_ids is None: # Training
+            system_len, image_len, user_query_len = length_group
+            output_vision_embeds = hidden_states[:, system_len:system_len+image_len, :]
+            self.tmp_new_vision_embeds = output_vision_embeds
+            assert output_vision_embeds.shape[1] == image_len
+            vision_cross = self.cross_attn(hidden_states, output_vision_embeds, output_vision_embeds)
+        
+        elif input_ids.shape[1] == 1: # Inference
+            assert self.tmp_new_vision_embeds != None
+            vision_cross = self.cross_attn(hidden_states, self.tmp_new_vision_embeds, self.tmp_new_vision_embeds)
+            
+        hidden_states = hidden_states +  self.alpha * vision_cross
+
+        # import pdb; pdb.set_trace()
+        
+        ##############################
+        ## Controller
+        ##############################
         # c+εWc
-        if not (postive is None):
-            postive = postive.unsqueeze(1).unsqueeze(2)
-            tensor_type = hidden_states.dtype
-            hidden_states = hidden_states + postive * (self.W(hidden_states))
-            hidden_states = hidden_states.to(tensor_type)
-        elif self.sigma:
-            tensor_type = hidden_states.dtype
-            hidden_states = hidden_states + self.sigma * (self.W(hidden_states))
-            hidden_states = hidden_states.to(tensor_type)
+        # if not (postive is None):
+        #     postive = postive.unsqueeze(1).unsqueeze(2)
+        #     tensor_type = hidden_states.dtype
+        #     hidden_states = hidden_states + postive * (self.W(hidden_states))
+        #     hidden_states = hidden_states.to(tensor_type)
+        # elif self.sigma:
+        #     tensor_type = hidden_states.dtype
+        #     hidden_states = hidden_states + self.sigma * (self.W(hidden_states))
+        #     hidden_states = hidden_states.to(tensor_type)
+        
+        
+        
         logits = self.lm_head(hidden_states)
         loss = None
-        if labels is not None:
+        if labels is not None: # Training Stage
             # Shift so that tokens < n predict n
             shift_logits = logits[..., :-1, :].contiguous()
             shift_labels = labels[..., 1:].contiguous()
@@ -142,5 +201,5 @@ class LlavaLlamaControllerForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         )
         return model_inputs
 
-AutoConfig.register("llava_controller", ControllerConfig)
-AutoModelForCausalLM.register(ControllerConfig, LlavaLlamaControllerForCausalLM)
+AutoConfig.register("llava_vision_verifier", VerifierConfig)
+AutoModelForCausalLM.register(VerifierConfig, LlavaLlamaVerifierForCausalLM)
