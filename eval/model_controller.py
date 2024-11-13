@@ -49,11 +49,12 @@ def eval_model(args):
     model_path = args.model_path
     disable_torch_init()
     model_name = get_model_name_from_path(model_path)
-    tokenizer, model, image_processor, context_len = load_pretrained_model(model_path, args.model_base, model_name, args.model_version, args.model_vision)
+    tokenizer, model, image_processor, context_len = load_pretrained_model(model_path, args.model_base, model_name, args.model_version, args.model_vision, load_bf16=args.bf16)
     
     if args.model_version == 'llava_controller':
         model.sigma = args.sigma
     model = model.cuda()
+    
     qs = args.query
     if model.config.mm_use_im_start_end:
         qs = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + qs
@@ -156,7 +157,10 @@ def eval_model(args):
         image_id = image_ids[i]
 
         image = load_image(image_file)
-        image_tensor = image_processor.preprocess(image, return_tensors='pt')['pixel_values'].half().cuda()
+        if args.bf16:
+            image_tensor = image_processor.preprocess(image, return_tensors='pt')['pixel_values'].to(torch.bfloat16).cuda()
+        else:
+            image_tensor = image_processor.preprocess(image, return_tensors='pt')['pixel_values'].half().cuda()
 
         input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).cuda()
 
@@ -200,6 +204,7 @@ if __name__ == "__main__":
     parser.add_argument("--model-base", type=str, default=None)
     parser.add_argument("--model-version", type=str, default="llava") # llava & llava_controller & llava_verifier
     parser.add_argument("--model-vision", type=str, default="/raid_sdd/whz/model/clip_vit_large_patch14_336")
+    parser.add_argument("--bf16", type=bool, default=False) # vision verifier needs bf16 (if train in bf16, inference need to be bf16 not fp16)
     parser.add_argument("--sigma", type=float, default=0)
     parser.add_argument("--gt_file_path", type=str, default='/raid_sdd/zzy/data/halle/coco/coco2014/annotations/instances_val2014.json')
     parser.add_argument("--image_path", type=str, default='/raid_sdd/zzy/data/halle/coco/coco2014/val2014')

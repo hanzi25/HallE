@@ -11,14 +11,14 @@ deepspeed --include localhost:2,3 --master_port 25331 llava/train/train_verifier
     --mm_use_im_patch_token False \
     --image_aspect_ratio pad \
     --bf16 True \
-    --output_dir /raid_sdd/whz/experiments/halle/train/exp2_llava_verifier_minus1_9k_1ep_16bz_2e5 \
+    --output_dir /raid_sdd/whz/experiments/halle/train/exp3_llava_verifier_minus1_9k_1ep_16bz_2e5 \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 8 \
+    --per_device_train_batch_size 16 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 1 \
     --evaluation_strategy "no" \
     --save_strategy "steps" \
-    --save_steps 50000 \
+    --save_steps 200 \
     --save_total_limit 1 \
     --learning_rate 2e-5 \
     --weight_decay 0. \

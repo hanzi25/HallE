@@ -41,11 +41,16 @@ class CrossAttention(nn.Module):
         self.scaling = hidden_size ** -0.5
             
     def forward(self, query, key, value):
+        
         query = self.W_q(query)
         key = self.W_k(key)
         value = self.W_v(value)
         
         scores = torch.matmul(query, key.transpose(-2, -1)) * self.scaling
+        
+        # 为了数值稳定性，减去attention_scores的最大值 （softmax 上下溢问题）
+        # scores = scores - torch.max(scores, dim=-1, keepdim=True)[0]
+        
         attn = F.softmax(scores, dim=-1)
         context = torch.matmul(attn, value)
         
@@ -122,12 +127,17 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         ## Vision Verifier
         ##############################
         
-        if input_ids is None: # Training
+        if input_ids is None: # Training & First inference
             system_len, image_len, user_query_len = length_group
             output_vision_embeds = hidden_states[:, system_len:system_len+image_len, :]
+            text_embeds = hidden_states[:, system_len+image_len:, :]
+            
             self.tmp_new_vision_embeds = output_vision_embeds
             assert output_vision_embeds.shape[1] == image_len
-            vision_cross = self.cross_attn(hidden_states, output_vision_embeds, output_vision_embeds)
+            
+            vision_cross = torch.zeros_like(hidden_states)
+            vision_cross[:, system_len+image_len:, :] = self.cross_attn(text_embeds, output_vision_embeds, output_vision_embeds)
+            
         
         elif input_ids.shape[1] == 1: # Inference
             assert self.tmp_new_vision_embeds != None

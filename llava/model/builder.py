@@ -24,7 +24,7 @@ from llava.model import *
 from llava.constants import DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
 
 
-def load_pretrained_model(model_path, model_base, model_name, model_version, model_vision=None,load_8bit=False, load_4bit=False, device_map="auto", device="cuda"):
+def load_pretrained_model(model_path, model_base, model_name, model_version, model_vision=None, load_bf16=False, load_8bit=False, load_4bit=False, device_map="auto", device="cuda"):
     kwargs = {"device_map": device_map}
 
     if load_8bit:
@@ -37,6 +37,8 @@ def load_pretrained_model(model_path, model_base, model_name, model_version, mod
             bnb_4bit_use_double_quant=True,
             bnb_4bit_quant_type='nf4'
         )
+    elif load_bf16:
+        kwargs['torch_dtype'] = torch.bfloat16
     else:
         kwargs['torch_dtype'] = torch.float16
 
@@ -98,7 +100,10 @@ def load_pretrained_model(model_path, model_base, model_name, model_version, mod
                     model = LlavaLlamaForCausalLM.from_pretrained(model_base, low_cpu_mem_usage=True, config=cfg_pretrained, **kwargs)
 
             mm_projector_weights = torch.load(os.path.join(model_path, 'mm_projector.bin'), map_location='cpu')
-            mm_projector_weights = {k: v.to(torch.float16) for k, v in mm_projector_weights.items()}
+            if load_bf16:
+                mm_projector_weights = {k: v.to(torch.bfloat16) for k, v in mm_projector_weights.items()}
+            else:
+                mm_projector_weights = {k: v.to(torch.float16) for k, v in mm_projector_weights.items()}
             model.load_state_dict(mm_projector_weights, strict=False)
         else:
             if 'mpt' in model_name.lower():
@@ -168,7 +173,10 @@ def load_pretrained_model(model_path, model_base, model_name, model_version, mod
         vision_tower = model.get_vision_tower()
         if not vision_tower.is_loaded:
             vision_tower.load_model()
-        vision_tower.to(device=device, dtype=torch.float16)
+        if load_bf16:
+            vision_tower.to(device=device, dtype=torch.bfloat16)
+        else:
+            vision_tower.to(device=device, dtype=torch.float16)
         image_processor = vision_tower.image_processor
 
     if hasattr(model.config, "max_sequence_length"):

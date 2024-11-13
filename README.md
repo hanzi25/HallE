@@ -12,6 +12,9 @@ Paper:
 - [Install](#install)
 - [Training](#training)
 - [Evaluation](#evaluation)
+- [Experiments](#experiments)
+- [Results](#results)
+- [Others](#others)
 
 ## Install
 1. Clone this repository and navigate to HallE_Control folder
@@ -64,7 +67,7 @@ Make sure the output_dir contains the word "llava" and "controller" for correct 
 
 - data_file: /raid_sdd/whz/data/halle/detail_switch_minus_1_9093.json
 
-2. Start trainning
+2. Start training
 
 - Train vision verifier: llava/model/language_model/llava_llama_verifier.py
 
@@ -88,6 +91,35 @@ bash scripts/v1_5/model_control_eval.sh
 bash eval_chair.sh
 ```
 
+# Experiments
+
+1. LLaVA
+    - Path: /raid_sdd/whz/experiments/halle/inference/llava
+    - LLaVA 原始 ckpt 推理 
+2. LLaVA controller:
+    - Path: exp4_llava_controller_23k_1ep_16bz_2e5
+    - 复现 halle-control
+3. Verifier_v1:
+    - Path: exp2_llava_verifier_minus1_9k_1ep_16bz_2e5
+    - 训练时 hidden states（system_prompt + vision_embeds + question + answer） 所有部分都和 vision_embeds 进行 cross attention
+4. Verifier_v2:
+    - Path: exp3_llava_verifier_minus1_9k_1ep_8bz_2e5
+    - 训练时 hidden states 中仅 question + answer 与 vision_embeds 进行 cross attention
+
+
+# Results
+
+| Model | Tune | lr | CHAIRs | CHAIRi | Recall | Len |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| LLaVA-v1.5 |  |  | 0.47 | 0.1386 | 0.7814 | 1.00922 |
+| LLaVA | Controller(sigma=-1) | 2e5 | 0.434 | 0.1236 | 0.7565 | 1.13142 |
+| LLaVA | Controller(sigma=+1) | 2e5 | 0.518 | 0.1599 | 0.7792 | 0.98124 |
+| LLaVA | Verifier_v1 | 2e5 | 0.454 | 0.1307 | 0.7572 | 1.06614 |
+| LLaVA | Verifier_v2 | 2e5 | 0.448 | 0.1255 | 0.7643 | 1.06818 |
+| LLaVA | Verifier_v2 | 1e5 | 0.458 | 0.1343 | 0.7743 | 1.03144 |
+| LLaVA | Verifier_v2 | 3e5 | 0.436 | 0.1278 | 0.7629 | 1.12096 |
+
+
 
 # Others
 
@@ -98,5 +130,13 @@ bash eval_chair.sh
     - 22810MiB / 46068MiB
 
 
-2. 推理时间 & 现存占用
+2. 推理时间 & 显存占用
 - llava 纯推理显存占用：15802MiB 
+- 单卡推理 4.65s/it;
+- CHAIR评测时间 40min
+
+3. 参考链接
+- [OPERA CHAIR](https://github.com/shikiw/OPERA/blob/main/chair_eval.py)
+- [文件开权限，chmod 777](https://zhuanlan.zhihu.com/p/705959942)
+- [hf-mirror huggingface 下载模型和数据](https://hf-mirror.com/)
+- [ssh 权限](https://zhuanlan.zhihu.com/p/688103044)
