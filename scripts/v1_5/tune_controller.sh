@@ -1,4 +1,4 @@
-deepspeed --include localhost:1,2 --master_port 25001 llava/train/train_switch_mem.py \
+deepspeed --include localhost:0,3 --master_port 25001 llava/train/train_switch_mem.py \
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path /raid_sdd/whz/model/llava_1_5 \
     --version v1 \
@@ -11,9 +11,9 @@ deepspeed --include localhost:1,2 --master_port 25001 llava/train/train_switch_m
     --mm_use_im_patch_token False \
     --image_aspect_ratio pad \
     --bf16 True \
-    --output_dir /raid_sdd/zzy/model/halle/llava_controller_results_1111 \
+    --output_dir /raid_sdd/whz/experiments/halle/train/exp4_llava_controller_23k_1ep_8bz_2e5 \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 16 \
+    --per_device_train_batch_size 8 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 1 \
     --evaluation_strategy "no" \
@@ -30,3 +30,4 @@ deepspeed --include localhost:1,2 --master_port 25001 llava/train/train_switch_m
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
     --lazy_preprocess True \
+    # --data_path /raid_sdd/whz/data/halle/detail_switch_minus_1_9093.json \

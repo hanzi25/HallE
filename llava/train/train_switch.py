@@ -105,7 +105,14 @@ class TrainingArguments(transformers.TrainingArguments):
     lora_bias: str = "none"
     mm_projector_lr: Optional[float] = None
     group_by_modality_length: bool = field(default=False)
-
+    report_to: Optional[str] = field(
+        default="wandb", 
+        metadata={"help": "use 'wandb' to log with wandb"}
+    )
+    wandb_project_name: Optional[str] = field(
+        default="llava_vision_verifier", 
+        metadata={"help": "wandb project name"}
+    )
 
 def maybe_zero_3(param, ignore_status=False, name=None):
     from deepspeed import zero
@@ -766,6 +773,11 @@ def train():
     local_rank = training_args.local_rank
     compute_dtype = (torch.float16 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32))
 
+    # wandb visualization
+    wandb_name = training_args.output_dir.split("/")[-1]
+    os.environ["WANDB_PROJECT"] = training_args.wandb_project_name # name your W&B project
+    os.environ["WANDB_NAME"] = wandb_name # name your W&B project
+    
     bnb_model_from_pretrained_args = {}
     if training_args.bits in [4, 8]:
         from transformers import BitsAndBytesConfig

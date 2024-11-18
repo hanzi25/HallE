@@ -32,9 +32,9 @@ def save_result(path, args, results):
     current_time = f"{now.month}{now.day}{time}"
 
     if args.model_version == 'llava_controller':
-        save_file = f"{path}/{args.model_version}_{args.sigma}_{current_time}.jsonl"
+        save_file = f"{path}/{args.model_version}_{args.sigma}.jsonl"
     else:
-        save_file = f"{path}/{args.model_version}_{current_time}.jsonl"
+        save_file = f"{path}/{args.model_version}.jsonl"
 
     with open(save_file, "w") as file:
         for res in results:
