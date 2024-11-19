@@ -109,16 +109,18 @@ bash eval_chair.sh
 
 # Results
 
-| Model | Tune | Train Data | lr | CHAIRs | CHAIRi | Recall | Len |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| LLaVA-v1.5 |  |  |  | 0.47 | 0.1386 | 0.7814 | 1.00922 |
-| LLaVA | Controller(sigma=-1) | 23k | 2e5 | 0.434 | 0.1236 | 0.7565 | 1.13142 |
-| LLaVA | Controller(sigma=+1) | 23k | 2e5 | 0.518 | 0.1599 | 0.7792 | 0.98124 |
-| LLaVA | Controller(sigma=-1) | 9k(-1) | 2e5 | 0.394 | 0.1156 | 0.71398 | 1.31516 |
-| LLaVA | Verifier_v1 | 9k(-1) | 2e5 | 0.454 | 0.1307 | 0.7572 | 1.06614 |
-| LLaVA | Verifier_v2 | 9k(-1) | 2e5 | 0.448 | 0.1255 | 0.7643 | 1.06818 |
-| LLaVA | Verifier_v2 | 9k(-1) | 1e5 | 0.458 | 0.1343 | 0.7743 | 1.03144 |
-| LLaVA | Verifier_v2 | 9k(-1) | 3e5 | 0.436 | 0.1278 | 0.7629 | 1.12096 |
+| Model | Tune | Train Data | lr | CHAIRs | CHAIRi | Recall | Len | max length | max new tokens |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| LLaVA-v1.5 |  |  |  | 0.47 | 0.1386 | 0.7814 | 1.00922 | 1024 | |
+| LLaVA | Controller(sigma=-1) | 23k | 2e5 | 0.434 | 0.1236 | 0.7565 | 1.13142 | 1024 | |
+| LLaVA | Controller(sigma=+1) | 23k | 2e5 | 0.518 | 0.1599 | 0.7792 | 0.98124 | 1024 | |
+| LLaVA | Controller(sigma=-1) | 9k(-1) | 2e5 | 0.394 | 0.1156 | 0.71398 | 1.31516 | 1024 | |
+| LLaVA | Verifier_v1 | 9k(-1) | 2e5 | 0.454 | 0.1307 | 0.7572 | 1.06614 | 1024 | |
+| LLaVA | Verifier_v2 | 9k(-1) | 2e5 | 0.448 | 0.1255 | 0.7643 | 1.06818 | 1024 | |
+| LLaVA | Verifier_v2 | 9k(-1) | 2e5 | 0.428 | 0.1268 | 0.7622 | 1.0791 | | 200 |
+| LLaVA | Verifier_v2 | 9k(-1) | 2e5 | 0.346| 0.109 | 0.7168 | 0.8437 | | 100 |
+| LLaVA | Verifier_v2 | 9k(-1) | 1e5 | 0.458 | 0.1343 | 0.7743 | 1.03144 | 1024 | |
+| LLaVA | Verifier_v2 | 9k(-1) | 3e5 | 0.436 | 0.1278 | 0.7629 | 1.12096 | 1024 | |
 
 
 
