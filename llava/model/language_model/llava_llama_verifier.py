@@ -32,6 +32,11 @@ from .llava_llama import LlavaLlamaModel
 class VerifierConfig(LlamaConfig):
     model_type = "llava_vision_verifier"
 
+    def __init__(self, alpha_type):
+        super(LlamaConfig, self).__init__()
+        self.alpha_type = alpha_type
+
+
 class CrossAttention(nn.Module):
     def __init__(self, hidden_size):
         super(CrossAttention, self).__init__()
@@ -61,11 +66,18 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
 
     def __init__(self, config):
         super(LlamaForCausalLM, self).__init__(config)
+
         self.model = LlavaLlamaModel(config)
         # self.W = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
         
         self.cross_attn = CrossAttention(config.hidden_size)
-        self.alpha = nn.Parameter(torch.zeros(config.hidden_size)) # gating
+
+        if config.alpha_type == "scalar":
+            self.alpha = nn.Parameter(torch.tensor(0.0))
+        elif config.alpha_type == "vector":
+            self.alpha = nn.Parameter(torch.zeros(config.hidden_size))
+        elif config.alpha_type == "matrix":
+            self.alpha = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
         
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         
@@ -142,8 +154,11 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         elif input_ids.shape[1] == 1: # Inference
             assert self.tmp_new_vision_embeds != None
             vision_cross = self.cross_attn(hidden_states, self.tmp_new_vision_embeds, self.tmp_new_vision_embeds)
-            
-        hidden_states = hidden_states +  self.alpha * vision_cross
+
+        if isinstance(self.alpha, nn.Linear):
+            hidden_states = hidden_states + self.alpha(vision_cross)
+        elif isinstance(self.alpha, nn.Parameter):
+            hidden_states = hidden_states + self.alpha * vision_cross
 
         # import pdb; pdb.set_trace()
         
