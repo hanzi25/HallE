@@ -106,23 +106,38 @@ bash eval_chair.sh
     - Path: exp3_llava_verifier_minus1_9k_1ep_8bz_2e5
     - 训练时 hidden states 中仅 question + answer 与 vision_embeds 进行 cross attention
 
+...
+
+实验记录：https://kdocs.cn/l/cmqOJvKsbG1j
 
 # Results
 
-| Model | Tune | Train Data | lr | CHAIRs | CHAIRi | Recall | Len | max length | max new tokens |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| LLaVA-v1.5 |  |  |  | 0.47 | 0.1386 | 0.7814 | 1.00922 | 1024 | |
-| LLaVA | Controller(sigma=-1) | 23k | 2e5 | 0.434 | 0.1236 | 0.7565 | 1.13142 | 1024 | |
-| LLaVA | Controller(sigma=+1) | 23k | 2e5 | 0.518 | 0.1599 | 0.7792 | 0.98124 | 1024 | |
-| LLaVA | Controller(sigma=-1) | 9k(-1) | 2e5 | 0.394 | 0.1156 | 0.71398 | 1.31516 | 1024 | |
-| LLaVA | Verifier_v1 | 9k(-1) | 2e5 | 0.454 | 0.1307 | 0.7572 | 1.06614 | 1024 | |
-| LLaVA | Verifier_v2 | 9k(-1) | 2e5 | 0.448 | 0.1255 | 0.7643 | 1.06818 | 1024 | |
-| LLaVA | Verifier_v2 | 9k(-1) | 2e5 | 0.428 | 0.1268 | 0.7622 | 1.0791 | | 200 |
-| LLaVA | Verifier_v2 | 9k(-1) | 2e5 | 0.346| 0.109 | 0.7168 | 0.8437 | | 100 |
-| LLaVA | Verifier_v2 | 9k(-1) | 1e5 | 0.458 | 0.1343 | 0.7743 | 1.03144 | 1024 | |
-| LLaVA | Verifier_v2 | 9k(-1) | 3e5 | 0.436 | 0.1278 | 0.7629 | 1.12096 | 1024 | |
+
+| Model | Tune | Alpha Type | Device & bz| Train Data | lr | CHAIRs | CHAIRi | Recall | Len | max length | max new tokens |
+| ---   | ---: |       ---: |       ---: |       ---: | ---: | ---:   | ---:   | ---:   | ---: | ---: | ---: |
+| LLaVA-v1.5 |  |  |  |   |   | 0.47 | 0.1386 | 0.7814 | 1.00922 | 1024 |  |
+| LLaVA | Controller(sigma=-1) | - | 2*A40 16bz | 23k | 2e5 | 0.434 | 0.1236 | 0.7565 | 1.13142 | 1024 |  |
+| LLaVA | Controller(sigma=+1) | - | 2*A40 16bz | 23k | 2e5 | 0.518 | 0.1599 | 0.7792 | 0.98124 | 1024 |  |
+| LLaVA | Controller(sigma=-1) | - | 2*A40 8bz | 9k(-1) | 2e5 | 0.394 | 0.1156 | 0.71398 | 1.31516 | 1024 |  |
+| LLaVA | Verifier_v1 | vector | 2*A40 8bz |  9k(-1) | 2e5 | 0.454 | 0.1307 | 0.7572 | 1.06614 | 1024 |  |
+| LLaVA | Verifier_v2 | vector | 2*A40 8bz | 9k(-1) | 2e5 | 0.448 | 0.1255 | 0.7643 | 1.06818 |1024 | |
+| LLaVA | Verifier_v2 | vector | 2*A40 8bz | 9k(-1) | 2e5 | 0.428 | 0.1268 | 0.7622 | 1.0791 | | 200 |
+| LLaVA | Verifier_v2 | vector | 2*A40 8bz | 9k(-1) | 2e5 | 0.346| 0.109 | 0.7168 | 0.8437 | | 100 |
+| LLaVA | Verifier_v2 | vector | 2*A40 8bz | 9k(-1) | 1e5 | 0.458 | 0.1343 | 0.7743 | 1.03144 |1024 | |
+| LLaVA | Verifier_v2 | vector | 2*A40 8bz | 9k(-1) | 3e5 | 0.436 | 0.1278 | 0.7629 | 1.12096 |1024 | |
+| LLaVA | Verifier_v2 | matrix | 4*A40 4bz | 9k(-1) | 3e5 | 0.392 | 0.1203 | 0.7317 | 1.22746 |1024 | |
+| LLaVA | Verifier_v2 | scalar | 2*A40 8bz | 9k(-1) | 3e5 | 0.446 | 0.1250 | 0.7615 | 1.0407 |1024 | |
+| LLaVA | Verifier_v2 | vector | 4*A40 4bz | 9k(-1) | 3e5 | 0.462 | 0.1320 | 0.7615 | 1.1607 |1024 | |
 
 
+
+
+
+# Inference Config
+```Shell
+    do_sample=True, # Nucleus
+    temperature=0.2,
+```
 
 # Others
 

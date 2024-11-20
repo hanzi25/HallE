@@ -214,9 +214,7 @@ if __name__ == "__main__":
     parser.add_argument("--model-vision", type=str, default="/raid_sdd/whz/model/clip_vit_large_patch14_336")
     parser.add_argument("--bf16", type=bool, default=False) # vision verifier needs bf16 (if train in bf16, inference need to be bf16 not fp16)
     parser.add_argument("--sigma", type=float, default=0)
-
-    parser.add_argument("--use_verifier", type=bool, default=False)
-
+    parser.add_argument("--use_verifier", type=bool, default=True)
     parser.add_argument("--gt_file_path", type=str, default='/raid_sdd/zzy/data/halle/coco/coco2014/annotations/instances_val2014.json')
     parser.add_argument("--image_path", type=str, default='/raid_sdd/zzy/data/halle/coco/coco2014/val2014')
     parser.add_argument("--query", type=str, default="Describe this image as detailed as possible.")
