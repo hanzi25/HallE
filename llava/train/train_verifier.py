@@ -58,6 +58,7 @@ class ModelArguments:
     mm_use_im_start_end: bool = field(default=False)
     mm_use_im_patch_token: bool = field(default=True)
     mm_vision_select_feature: Optional[str] = field(default="patch")
+    alpha_type: str = field(default="scalar")
 
 
 @dataclass
@@ -808,8 +809,11 @@ def train():
                 **bnb_model_from_pretrained_args
             )
         else:
+            config = transformers.AutoConfig.from_pretrained(model_args.model_name_or_path, trust_remote_code=True)
+            config.alpha_type = model_args.alpha_type
             model = LlavaLlamaVerifierForCausalLM.from_pretrained(
                 model_args.model_name_or_path,
+                config=config,
                 cache_dir=training_args.cache_dir,
                 **bnb_model_from_pretrained_args
             )
