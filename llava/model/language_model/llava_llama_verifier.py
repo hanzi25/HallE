@@ -160,6 +160,11 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         elif isinstance(self.alpha, nn.Parameter):
             hidden_states = hidden_states + self.alpha * vision_cross
 
+        if isinstance(self.alpha, nn.Linear):
+            hidden_states = hidden_states + self.alpha(vision_cross)
+        elif isinstance(self.alpha, nn.Parameter):
+            hidden_states = hidden_states + self.alpha * vision_cross
+
         ##############################
         ## Controller
         ##############################

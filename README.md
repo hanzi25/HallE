@@ -112,6 +112,7 @@ bash eval_chair.sh
 
 # Results
 
+
 | Model | Tune | Alpha Type | Device & bz| Train Data | lr | CHAIRs | CHAIRi | Recall | Len | max length | max new tokens |
 | ---   | ---: |       ---: |       ---: |       ---: | ---: | ---:   | ---:   | ---:   | ---: | ---: | ---: |
 | LLaVA-v1.5 |  |  |  |   |   | 0.47 | 0.1386 | 0.7814 | 1.00922 | 1024 |  |
