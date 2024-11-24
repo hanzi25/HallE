@@ -1,4 +1,4 @@
-deepspeed --include localhost:2,3 --master_port 25432 llava/train/train_verifier.py \
+deepspeed --include localhost:3 --master_port 25432 llava/train/train_verifier.py \
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path /raid_sdd/whz/model/llava_1_5 \
     --version v1 \
@@ -9,10 +9,10 @@ deepspeed --include localhost:2,3 --master_port 25432 llava/train/train_verifier
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
-    --alpha_type matrix \
+    --alpha_type scalar \
     --image_aspect_ratio pad \
     --bf16 True \
-    --output_dir /raid_sdd/zzy/experiments/halle/train/exp5_llava_verifier_matrix_minus1_9k_1ep_4bz_3e5 \
+    --output_dir /raid_sdd/zzy/experiments/halle/train/exp5_llava_verifier_scalar_with_gradient_minus1_9k_1ep_4bz_3e5 \
     --num_train_epochs 1 \
     --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 4 \

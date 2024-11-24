@@ -58,6 +58,8 @@ class CrossAttention(nn.Module):
         
         attn = F.softmax(scores, dim=-1)
         context = torch.matmul(attn, value)
+
+        # import pdb; pdb.set_trace()
         
         return context        
 
@@ -154,11 +156,6 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         elif input_ids.shape[1] == 1: # Inference
             assert self.tmp_new_vision_embeds != None
             vision_cross = self.cross_attn(hidden_states, self.tmp_new_vision_embeds, self.tmp_new_vision_embeds)
-
-        if isinstance(self.alpha, nn.Linear):
-            hidden_states = hidden_states + self.alpha(vision_cross)
-        elif isinstance(self.alpha, nn.Parameter):
-            hidden_states = hidden_states + self.alpha * vision_cross
 
         if isinstance(self.alpha, nn.Linear):
             hidden_states = hidden_states + self.alpha(vision_cross)
