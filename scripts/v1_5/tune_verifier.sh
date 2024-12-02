@@ -1,4 +1,4 @@
-deepspeed --include localhost:3 --master_port 25432 llava/train/train_verifier.py \
+deepspeed --include localhost:0,1 --master_port 25432 llava/train/train_verifier.py \
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path /raid_sdd/whz/model/llava_1_5 \
     --version v1 \
@@ -21,7 +21,7 @@ deepspeed --include localhost:3 --master_port 25432 llava/train/train_verifier.p
     --save_strategy "steps" \
     --save_steps 200 \
     --save_total_limit 1 \
-    --learning_rate 3e-5 \
+    --learning_rate 4e-5 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \
@@ -31,3 +31,11 @@ deepspeed --include localhost:3 --master_port 25432 llava/train/train_verifier.p
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
     --lazy_preprocess True \
+
+CUDA_VISIBLE_DEVICES=1 python3 eval/model_controller.py \
+            --model-path $model_path \
+            --model-version llava_verifier \
+            --bf16 True \
+            --gt_file_path /raid_sdd/zzy/data/halle/coco/coco2014/annotations/instances_val2014.json \
+            --image_path /raid_sdd/zzy/data/halle/coco/coco2014/val2014 \
+            --output_folder $model_path/eval

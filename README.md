@@ -116,18 +116,19 @@ bash eval_chair.sh
 | Model | Tune | Alpha Type | Device & bz| Train Data | lr | CHAIRs | CHAIRi | Recall | Len | max length | max new tokens |
 | ---   | ---: |       ---: |       ---: |       ---: | ---: | ---:   | ---:   | ---:   | ---: | ---: | ---: |
 | LLaVA-v1.5 |  |  |  |   |   | 0.47 | 0.1386 | 0.7814 | 1.00922 | 1024 |  |
-| LLaVA | Controller(sigma=-1) | - | 2*A40 16bz | 23k | 2e5 | 0.434 | 0.1236 | 0.7565 | 1.13142 | 1024 |  |
-| LLaVA | Controller(sigma=+1) | - | 2*A40 16bz | 23k | 2e5 | 0.518 | 0.1599 | 0.7792 | 0.98124 | 1024 |  |
-| LLaVA | Controller(sigma=-1) | - | 2*A40 8bz | 9k(-1) | 2e5 | 0.394 | 0.1156 | 0.71398 | 1.31516 | 1024 |  |
-| LLaVA | Verifier_v1 | vector | 2*A40 8bz |  9k(-1) | 2e5 | 0.454 | 0.1307 | 0.7572 | 1.06614 | 1024 |  |
-| LLaVA | Verifier_v2 | vector | 2*A40 8bz | 9k(-1) | 2e5 | 0.448 | 0.1255 | 0.7643 | 1.06818 |1024 | |
-| LLaVA | Verifier_v2 | vector | 2*A40 8bz | 9k(-1) | 2e5 | 0.428 | 0.1268 | 0.7622 | 1.0791 | | 200 |
-| LLaVA | Verifier_v2 | vector | 2*A40 8bz | 9k(-1) | 2e5 | 0.346| 0.109 | 0.7168 | 0.8437 | | 100 |
-| LLaVA | Verifier_v2 | vector | 2*A40 8bz | 9k(-1) | 1e5 | 0.458 | 0.1343 | 0.7743 | 1.03144 |1024 | |
-| LLaVA | Verifier_v2 | vector | 2*A40 8bz | 9k(-1) | 3e5 | 0.436 | 0.1278 | 0.7629 | 1.12096 |1024 | |
-| LLaVA | Verifier_v2 | matrix | 4*A40 4bz | 9k(-1) | 3e5 | 0.392 | 0.1203 | 0.7317 | 1.22746 |1024 | |
-| LLaVA | Verifier_v2 | scalar | 2*A40 8bz | 9k(-1) | 3e5 | 0.446 | 0.1250 | 0.7615 | 1.0407 |1024 | |
-| LLaVA | Verifier_v2 | vector | 4*A40 4bz | 9k(-1) | 3e5 | 0.462 | 0.1320 | 0.7615 | 1.1607 |1024 | |
+| LLaVA | Controller | sigma=-1 | 2x16bz | 23k | 2e5 | 0.434 | 0.1236 | 0.7565 | 1.13142 | 1024 |  |
+| LLaVA | Controller | sigma=+1| 2x16bz | 23k | 2e5 | 0.518 | 0.1599 | 0.7792 | 0.98124 | 1024 |  |
+| LLaVA | Controller | sigma=-1| 2x8bz | 9k(-1) | 2e5 | 0.394 | 0.1156 | 0.71398 | 1.31516 | 1024 |  |
+| LLaVA | Verifier_v1 | vector | 2x8bz |  9k(-1) | 2e5 | 0.454 | 0.1307 | 0.7572 | 1.06614 | 1024 |  |
+| LLaVA | Verifier_v2 | vector | 2x8bz | 9k(-1) | 2e5 | 0.448 | 0.1255 | 0.7643 | 1.06818 |1024 | |
+| LLaVA | Verifier_v2 | vector | 2x8bz | 9k(-1) | 2e5 | 0.428 | 0.1268 | 0.7622 | 1.0791 | | 200 |
+| LLaVA | Verifier_v2 | vector | 2x8bz | 9k(-1) | 2e5 | 0.346| 0.109 | 0.7168 | 0.8437 | | 100 |
+| LLaVA | Verifier_v2 | vector | 2x8bz | 9k(-1) | 1e5 | 0.458 | 0.1343 | 0.7743 | 1.03144 |1024 | |
+| LLaVA | Verifier_v2 | vector | 2x8bz | 9k(-1) | 3e5 | 0.436 | 0.1278 | 0.7629 | 1.12096 |1024 | |
+| LLaVA | Verifier_v2 | matrix | 4x4bz | 9k(-1) | 3e5 | 0.392 | 0.1203 | 0.7317 | 1.22746 |1024 | |
+| LLaVA | Verifier_v2 | vector | 4x4bz | 9k(-1) | 3e5 | 0.462 | 0.1320 | 0.7615 | 1.1607 |1024 | |
+| LLaVA | Verifier_v2 | scalar(0) | 2x8bz | 9k(-1) | 3e5 | 0.446 | 0.1250 | 0.7615 | 1.0407 |1024 | |
+| LLaVA | Verifier_v2 | scalar(0.1) | 1x4bz | 9k(-1) | 3e5 | 0.392 | 0.1113 | 0.7402 | 1.17946 |1024 | |
 
 
 
@@ -142,10 +143,12 @@ bash eval_chair.sh
 # Others
 
 1. 训练时间 & 显存占用
-- llava verifier 训练：
-    - 两卡：50 min 
+- llava verifier 训练（两卡）：
+    - 时间：50 min 
     - 33422MiB / 49140MiB 
     - 22810MiB / 46068MiB
+- llava verifier 训练（一卡）：
+    - 4bz大概是26G-28G，8bz有时候能到40多
 
 
 2. 推理时间 & 显存占用
@@ -153,8 +156,16 @@ bash eval_chair.sh
 - 单卡推理 4.65s/it;
 - CHAIR评测时间 40min
 
-3. 参考链接
+3. Deepspeed 
+[Deepspeed zero3 debug](https://deepspeed.readthedocs.io/en/latest/zero3.html#debugging) 查看梯度
+```Shell
+deepspeed.utils.safe_get_full_grad(model.alpha.weight)
+```
+
+4. 参考链接
 - [OPERA CHAIR](https://github.com/shikiw/OPERA/blob/main/chair_eval.py)
 - [文件开权限，chmod 777](https://zhuanlan.zhihu.com/p/705959942)
 - [hf-mirror huggingface 下载模型和数据](https://hf-mirror.com/)
 - [ssh 权限](https://zhuanlan.zhihu.com/p/688103044)
+- [Python调试器pdb教程](https://zhuanlan.zhihu.com/p/37294138)
+
