@@ -23,19 +23,11 @@ git clone https://github.com/bronyayang/HallE_Control.git
 cd HallE_Control
 ```
 
-2. Install Package
+2. Install Package (for CUDA 12.1)
 ```Shell
 conda create -n halle python=3.10 -y
 conda activate halle
-bash scripts/run.sh
-```
-
-3. Install nltk
-```Shell
-import nltk
-nltk.download('punkt_tab')
-nltk.download('averaged_perceptron_tagger_eng')
-nltk.download('wordnet')
+bash scripts/run.sh # bash scripts/run_cu11.sh if you are using CUDA 11.7/11.8
 ```
 
 
