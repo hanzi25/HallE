@@ -9,8 +9,6 @@ dist
 # Log
 *.log
 *.log.*
-*.json
-*.jsonl
 
 # Editor
 .idea

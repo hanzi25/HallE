@@ -3,7 +3,7 @@ import re
 import json
 import sys
 import argparse
-import openai
+from openai import OpenAI
 from abc import ABC, abstractmethod
 from tqdm import tqdm
 import time
@@ -15,19 +15,19 @@ class BaseAPIWrapper(ABC):
         pass
 
 class OpenAIAPIWrapper(BaseAPIWrapper):
-    def __init__(self, caller_name="default", key_pool=None, temperature=0, model="gpt-4-32k-0613", time_out=30):
+    def __init__(self, caller_name="default", key_pool=None, temperature=0, model="gpt-4o-mini-2024-07-18", time_out=30):
         self.key_pool = key_pool
         self.temperature = temperature
         self.model = model
         self.time_out = time_out
-        openai.api_base = ""
-        openai.api_type = "azure"
-        openai.api_version = "2023-06-01-preview" 
-        openai.api_key = key_pool[0]
+        self.client = OpenAI(
+            base_url="https://api2.aigcbest.top/v1",
+            api_key=key_pool[0]
+        )
 
     def request(self, system_content, usr_question):
-        response = openai.ChatCompletion.create(
-            engine="gpt_openapi",
+
+        response = self.client.chat.completions.create(
             messages=[
                 {"role": "system", "content": f"{system_content}"},
                 {"role": "user", "content": f"{usr_question}"}
@@ -35,8 +35,8 @@ class OpenAIAPIWrapper(BaseAPIWrapper):
             temperature=self.temperature, 
             model=self.model
         )
-        resp = response.choices[0]['message']['content']
-        total_tokens = response.usage['total_tokens']
+        resp = response.choices[0].message.content
+        total_tokens = response.usage.total_tokens
 
         return resp, total_tokens
     
@@ -51,9 +51,6 @@ class OpenAIAPIWrapper(BaseAPIWrapper):
                 break
             except:
                 print("fail ", max_try)
-                key = self.key_pool[key_i%2]
-                openai.api_key = key
-                key_i += 1
                 time.sleep(self.time_out)
                 max_try -= 1
     
@@ -62,15 +59,25 @@ class OpenAIAPIWrapper(BaseAPIWrapper):
 
 
 def load_generated_captions(cap_file):      
-   caps = json.load(open(cap_file))
-   try:
-       metrics = {}
-       caps = caps
-       imids = set([cap['image_id'] for cap in caps])
-   except:
-       raise Exception("Expect caption file to consist of a dectionary with sentences correspdonding to the key 'imgToEval'")
 
-   return caps, imids, metrics
+    ext = os.path.splitext(cap_file)[-1]
+
+    if ext == '.json':
+        caps = json.load(open(cap_file))
+    elif ext == '.jsonl':
+        caps = [json.loads(s) for s in open(cap_file)]
+    else:
+        raise ValueError(f'Unspported extension {ext} for cap_file: {cap_file}')
+
+    try:
+        metrics = {}
+        imids = [obj["image_id"] for obj in caps]
+        caps = [obj["caption"] for obj in caps]
+
+    except:
+        raise Exception("Expect caption file to consist of a dectionary with sentences correspdonding to the key 'imgToEval'")
+
+    return caps, imids, metrics
 
 
 class CHAIR(object):
@@ -209,8 +216,14 @@ class CHAIR(object):
     def converage(self, cap_file, vg_path='./vg_info_100.json'):
         image_infos = json.load(open(vg_path))
         num_caps = 0.
-        caps = json.load(open(cap_file))
-        caps = caps[:100]
+        
+        ext = os.path.splitext(cap_file)[-1]
+        if ext == '.json':
+            caps = json.load(open(cap_file))
+        elif ext == '.jsonl':
+            caps = [json.loads(s) for s in open(cap_file)]
+        else:
+            raise ValueError(f'Unspported extension {ext} for cap_file: {cap_file}')
 
         output = {'sentences': []} 
         avg_len = 0
@@ -222,7 +235,7 @@ class CHAIR(object):
         for i, cap_eval in tqdm(enumerate(caps), total=len(caps)):
 
             # Remove instructions
-            cap = cap_eval['text']
+            cap = cap_eval['caption']
             imid = cap_eval['image_id']
             if str(i+1) in image_infos or (i+1 in image_infos):
                 gt_objects = image_infos[str(i+1)]['gt_objs']
@@ -283,7 +296,7 @@ if __name__ == '__main__':
     _, imids, _ = load_generated_captions(args.cap_file)
     evaluator = CHAIR(args.key) 
     if not args.coverage:
-        cap_dict = evaluator.converage(args.cap_file, 'PATH TO VisualGenome_task') 
+        cap_dict = evaluator.converage(args.cap_file) 
         print_metrics(cap_dict)
     else:
         coverage_dict = evaluator.converage(args.cap_file, vg_path='./vg_info_100.json')
