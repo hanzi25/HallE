@@ -106,10 +106,18 @@ class CHAIR(object):
     def list_region2cap(self, list_regions):
         user_prompt = self.region_user_prompt.format_map({'list_of_regions':list(set(list_regions))})
         gpt_ret, total_tokens = self.openai_obj.get_completion(user_prompt=user_prompt, system_prompt=self.system_prompt,max_try=10)
+        '''
+        print("list_region2cap")
+        print(gpt_ret)
+        print(f"total_tokens: {total_tokens}")
+        '''
         match = re.search(r"\[(.*?)\]", gpt_ret)
         if match:
             objects_list_str = match.group(1)
             objects_in_image = [item.strip(" '") for item in objects_list_str.split(",")]
+            '''
+            print(list(set(objects_in_image)))
+            '''
             return list(set(objects_in_image))
         else:
             return []
@@ -117,10 +125,18 @@ class CHAIR(object):
     def cap2objs_gpt4(self, cap):
         user_prompt = self.cap_user_prompt.format_map({'cap':cap})
         gpt_ret, total_tokens = self.openai_obj.get_completion(user_prompt=user_prompt, system_prompt=self.system_prompt,max_try=10)
+        '''
+        print("cap2objs_gpt4")
+        print(gpt_ret)
+        print(f"total_tokens: {total_tokens}")
+        '''
         match = re.search(r"\[(.*?)\]", gpt_ret)
         if match:
             objects_list_str = match.group(1)
             objects_in_image = [item.strip(" '") for item in objects_list_str.split(",")]
+            '''
+            print(objects_in_image)
+            '''
             return objects_in_image
         else:
             return []
@@ -131,10 +147,18 @@ class CHAIR(object):
     def get_hall_gpt4(self, gt, cap_obj):
         user_prompt = self.hall_user_prompt.format_map({'gt':gt, 'cap_obj':cap_obj})
         gpt_ret, total_tokens = self.openai_obj.get_completion(user_prompt=user_prompt, system_prompt=self.system_prompt,max_try=10)
+        '''
+        print("get_hall_gpt4")
+        print(gpt_ret)
+        print(f"total_tokens: {total_tokens}")
+        '''
         match = re.search(r"\[(.*?)\]", gpt_ret)
         if match:
             objects_list_str = match.group(1)
             objects_in_image = [item.strip(" '") for item in objects_list_str.split(",")]
+            '''
+            print(list(set(objects_in_image)))
+            '''
             return list(set(objects_in_image))
         else:
             return []
@@ -142,19 +166,26 @@ class CHAIR(object):
     def compute_chair_vg(self, cap_file, vg_path='./vg_info_100.json'):
         image_infos = json.load(open(vg_path))
 
+        ext = os.path.splitext(cap_file)[-1]
+        if ext == '.json':
+            caps = json.load(open(cap_file))
+        elif ext == '.jsonl':
+            caps = [json.loads(s) for s in open(cap_file)]
+        else:
+            raise ValueError(f'Unspported extension {ext} for cap_file: {cap_file}')
+
         num_caps = 0.
         num_hallucinated_caps = 0.
         hallucinated_word_count = 0.
         coco_word_count = 0.
         all_param_words = 0.0
         coco_part_word_count = 0.
-        caps = json.load(open(cap_file))
         caps = caps[:100]
         output = {'sentences': []} 
         avg_len = 0
     
         for i, cap_eval in tqdm(enumerate(caps), total=len(caps)):
-            cap = cap_eval['text']
+            cap = cap_eval['caption']
             imid = cap_eval['image_id']
             if str(i+1) in image_infos or (i+1 in image_infos):
                 gt_objects = image_infos[str(i+1)]['gt_objs']
@@ -199,7 +230,11 @@ class CHAIR(object):
     def get_uncover_gpt4(self, gt, cap_obj):
         user_prompt = self.coverage_user_prompt.format_map({'cap_obj':cap_obj, 'gt':gt})
         gpt_ret, total_tokens = self.openai_obj.get_completion(user_prompt=user_prompt, system_prompt=self.system_prompt,max_try=10)
-
+        '''
+        print("get_uncover_gpt4")
+        print(gpt_ret)
+        print(f"total_tokens: {total_tokens}")
+        '''
         match = re.search(r"\[(.*?)\]", gpt_ret)
         # print(gpt_ret)
         # print('Not covered words are ', match)
@@ -209,13 +244,15 @@ class CHAIR(object):
             objects_list_str = match.group(1)
             # Split the string into a list of items
             objects_in_image = [item.strip(" '") for item in objects_list_str.split(",")]
+            '''
+            print(list(set(objects_in_image)))
+            '''
             return list(set(objects_in_image))
         else:
             return []
     
     def converage(self, cap_file, vg_path='./vg_info_100.json'):
         image_infos = json.load(open(vg_path))
-        num_caps = 0.
         
         ext = os.path.splitext(cap_file)[-1]
         if ext == '.json':
@@ -226,6 +263,7 @@ class CHAIR(object):
             raise ValueError(f'Unspported extension {ext} for cap_file: {cap_file}')
 
         output = {'sentences': []} 
+        num_caps = 0.
         avg_len = 0
         coco_word_count = 0.
         uncover_word_counts = 0
@@ -296,7 +334,7 @@ if __name__ == '__main__':
     _, imids, _ = load_generated_captions(args.cap_file)
     evaluator = CHAIR(args.key) 
     if not args.coverage:
-        cap_dict = evaluator.converage(args.cap_file) 
+        cap_dict = evaluator.compute_chair_vg(args.cap_file, vg_path='./vg_info_100.json') 
         print_metrics(cap_dict)
     else:
         coverage_dict = evaluator.converage(args.cap_file, vg_path='./vg_info_100.json')

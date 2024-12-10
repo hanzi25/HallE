@@ -1,4 +1,4 @@
-deepspeed --include localhost:4,5,6,7 --master_port 25432 llava/train/train_verifier.py \
+deepspeed --include localhost:2,3 --master_port 25432 llava/train/train_verifier.py \
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path /raid_sdi/home/zzy/model/llava_1_5 \
     --version v1 \
