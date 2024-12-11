@@ -2,7 +2,8 @@ model_path=/raid_sdd/whz/experiments/halle/train/exp5_with_weight_attn_llava_ver
 CUDA_VISIBLE_DEVICES=1 python3 eval/model_controller.py \
             --model-path $model_path \
             --model-version llava_verifier \
-            --bf16 True \
+            --bf16 \
+            --use_verifier \
             --gt_file_path /raid_sdd/zzy/data/halle/coco/coco2014/annotations/instances_val2014.json \
             --image_path /raid_sdd/zzy/data/halle/coco/coco2014/val2014 \
             --output_folder $model_path/eval

@@ -34,7 +34,7 @@ def save_result(path, args, results):
     if args.model_version == 'llava_controller':
         save_file = f"{path}/{args.model_version}_{args.sigma}.jsonl"
     elif args.model_version == 'llava_verifier':
-        if args.use_verifier == False:
+        if not args.use_verifier:
             save_file = f"{path}/{args.model_version}_no_verifier.jsonl"
         else:
             save_file = f"{path}/{args.model_version}.jsonl"
@@ -59,8 +59,8 @@ def eval_model(args):
     if args.model_version == 'llava_controller':
         model.sigma = args.sigma
     elif args.model_version == 'llava_verifier':
-        if args.use_verifier == False:
-            model.alpha = 0
+        if not args.use_verifier:
+            model.alpha = torch.nn.Parameter(torch.tensor(0.0))
     model = model.cuda()
     
     qs = args.query
@@ -212,9 +212,9 @@ if __name__ == "__main__":
     parser.add_argument("--model-base", type=str, default=None)
     parser.add_argument("--model-version", type=str, default="llava") # llava & llava_controller & llava_verifier
     parser.add_argument("--model-vision", type=str, default="/raid_sdi/home/zzy/model/clip_vit_large_patch14_336")
-    parser.add_argument("--bf16", type=bool, default=False) # vision verifier needs bf16 (if train in bf16, inference need to be bf16 not fp16)
+    parser.add_argument("--bf16", action='store_true') # vision verifier needs bf16 (if train in bf16, inference need to be bf16 not fp16)
     parser.add_argument("--sigma", type=float, default=0)
-    parser.add_argument("--use_verifier", type=bool, default=True)
+    parser.add_argument("--use_verifier", action='store_true')
     parser.add_argument("--gt_file_path", type=str, default='/raid_sdi/home/zzy/data/halle/coco/coco2014/annotations/instances_val2014.json')
     parser.add_argument("--image_path", type=str, default='/raid_sdi/home/zzy/data/halle/coco/coco2014/val2014')
     parser.add_argument("--query", type=str, default="Describe this image as detailed as possible.")
