@@ -470,7 +470,7 @@ if __name__ == '__main__':
         print(f"cached evaluator to: {args.cache}")
 
     # Example caption
-    example_caption = "The scene is set in a kitchen where a woman is standing and cutting a large cake. She is positioned towards the right side of the image, holding a knife and cutting the cake. The cake is placed on a table, which is located towards the left side of the image.\n\nThe kitchen is equipped with a refrigerator located towards the left side of the image, and a sink is visible towards the right side. The woman is wearing a red shirt, adding a pop of color to the scene."
+    example_caption = "The scene is set in a computer lab where a group of children are engaged in various activities. The main focus is on a young boy, who is wearing headphones and sitting at a computer. He is positioned towards the left side of the image. There are several other children scattered around the room, each at their own workstations. Some of them are closer to the boy, while others are further away. In addition to the children, there are multiple keyboards and computer mice scattered across the room. One keyboard is located near the boy, while another is closer to the right side of the image. Two more keyboards are positioned further away, one towards the center of the room and the other towards the right. A backpack is also visible in the scene, placed towards the right side of the room. The children appear to be learning and enjoying their time in the computer lab."
 
     # Initialize the CHAIR object with a dummy path
     chair = CHAIR(coco_path=None)  # Provide the actual path if needed
