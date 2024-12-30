@@ -19,26 +19,6 @@ def load_image(image_file):
         image = Image.open(image_file).convert('RGB')
     return image
 
-def visualize_attention(image, attention_map, grid_size):
-    """可视化注意力图，将其叠加到原始图片上"""
-    # 将注意力图调整为网格大小
-    attn = attention_map.reshape(grid_size, grid_size)
-    attn = attn / attn.max()  # 归一化
-    # 将注意力图调整为图片大小
-    attn_img = Image.fromarray((attn * 255).astype(np.uint8))
-    attn_img = attn_img.resize(image.size, resample=Image.BILINEAR)
-    # 将图片转换为numpy数组
-    img_array = np.array(image)
-    # 使用颜色映射（jet）为注意力图上色
-    cmap = plt.get_cmap('jet')
-    attn_colored = cmap(attn)
-    attn_colored = (attn_colored[:, :, :3] * 255).astype(np.uint8)
-    # 将注意力图叠加到原始图片上
-    overlay = Image.blend(Image.fromarray(img_array), Image.fromarray(attn_colored), alpha=0.5)
-    plt.imshow(overlay)
-    plt.axis('off')
-    plt.show()
-
 def eval_single_example(args):
     # Model Initialization
     model_path = args.model_path
@@ -87,38 +67,25 @@ def eval_single_example(args):
     
     # Generate the output
     with torch.inference_mode():
-        output = model.generate(
+        output_ids = model.generate(
             input_ids,
             images=image_tensor,
             do_sample=True,
             temperature=0.2,
             max_length=1024,
             use_cache=True,
-            stopping_criteria=[stopping_criteria],
-            output_attentions=True  # 启用注意力权重输出
+            stopping_criteria=[stopping_criteria]
         )
     
     # Decode the output
     input_token_len = input_ids.shape[1]
-    outputs = tokenizer.batch_decode(output.sequences[:, input_token_len:], skip_special_tokens=True)[0]
+    outputs = tokenizer.batch_decode(output_ids[:, input_token_len:], skip_special_tokens=True)[0]
     outputs = outputs.strip()
     if outputs.endswith(stop_str):
         outputs = outputs[:-len(stop_str)]
-    outputs = outputs.strip()
     
     print("Generated Caption: ", outputs)
 
-    # 提取注意力权重
-    attentions = output.attentions
-    # 假设最后一层的交叉注意力是我们需要的
-    cross_attentions = attentions[-1]
-    # 对所有注意力头取平均
-    avg_attn = torch.mean(cross_attentions, dim=1).squeeze(0).cpu().numpy()
-    
-    # 确定网格大小（例如，对于336x336的图片和16x16的patch，网格大小为21）
-    grid_size = 21
-    # 可视化注意力图
-    visualize_attention(image, avg_attn, grid_size)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
