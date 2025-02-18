@@ -46,6 +46,28 @@ def save_result(path, args, results):
             json.dump(res, file)
             file.write('\n')
 
+
+# 自定义生成方法，同时记录注意力分数
+def custom_generate_with_attention(model, input_ids, image_tensor, max_new_tokens=512):
+    generated_ids = input_ids.clone()
+
+    for _ in tqdm(range(max_new_tokens)):
+        outputs = model(input_ids=generated_ids, images=image_tensor, output_attentions=True)
+        
+        # 获取 logits 和当前时间步的注意力得分
+        logits = outputs.logits
+        attention_scores = outputs.attentions[-1]  # 获取最后一层的注意力
+
+        # 取最后一个时间步的输出 logits 并通过 softmax 采样生成 token
+        next_token = torch.argmax(logits[:, -1, :], dim=-1).unsqueeze(-1)
+        generated_ids = torch.cat([generated_ids, next_token], dim=-1)
+
+        # 如果达到结束 token，则停止生成
+        if next_token.item() == model.config.eos_token_id:
+            break
+
+    return generated_ids, attention_scores
+
 def eval_model(args):
 
     # ========================================
@@ -177,6 +199,12 @@ def eval_model(args):
         stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
 
         with torch.inference_mode():
+
+            # import pdb; pdb.set_trace()
+            model.config.output_attentions = True  # 启用注意力输出
+            generated_ids, all_attention_scores = custom_generate_with_attention(model, input_ids, image_tensor, max_new_tokens=512)
+            # import pdb; pdb.set_trace()
+
             output_ids = model.generate(
                 input_ids,
                 images=image_tensor,
@@ -185,7 +213,8 @@ def eval_model(args):
                 max_length=1024,
                 # max_new_tokens=1024,
                 use_cache=True,
-                stopping_criteria=[stopping_criteria])
+                stopping_criteria=[stopping_criteria],
+                )
 
         input_token_len = input_ids.shape[1]
         n_diff_input_output = (input_ids != output_ids[:, :input_token_len]).sum().item()
