@@ -42,12 +42,20 @@ class CLIPVisionTower(nn.Module):
             image_features = []
             self.image_attentions = []
             for image in images:
-                image_forward_out = self.vision_tower(image.to(device=self.device, dtype=self.dtype).unsqueeze(0), output_hidden_states=True, output_attentions=True)
+                image_forward_out = self.vision_tower(
+                    image.to(device=self.device, dtype=self.dtype).unsqueeze(0), 
+                    output_hidden_states=True,
+                    output_attentions=True
+                )
                 image_feature = self.feature_select(image_forward_out).to(image.dtype)
                 image_features.append(image_feature)
                 self.image_attentions.append(image_forward_out.attentions)
         else:
-            image_forward_outs = self.vision_tower(images.to(device=self.device, dtype=self.dtype), output_hidden_states=True, output_attentions=True)
+            image_forward_outs = self.vision_tower(
+                images.to(device=self.device, dtype=self.dtype), 
+                output_hidden_states=True,
+                output_attentions=True
+            )
             image_features = self.feature_select(image_forward_outs).to(images.dtype)
             self.image_attentions = image_forward_outs.attentions
 
@@ -78,7 +86,7 @@ class CLIPVisionTower(nn.Module):
 
     @property
     def num_patches_per_side(self):
-        return self.config.image_size // self.config.patch_size 
+        return self.config.image_size // self.config.patch_size
 
     @property
     def num_patches(self):

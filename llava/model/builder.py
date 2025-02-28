@@ -24,7 +24,7 @@ from llava.model import *
 from llava.constants import DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
 
 
-def load_pretrained_model(model_path, model_base, model_name, model_version, model_vision=None, load_bf16=False, load_8bit=False, load_4bit=False, device_map="auto", device="cuda"):
+def load_pretrained_model(model_path, model_base, model_name, model_version=None, model_vision=None, load_bf16=False, load_8bit=False, load_4bit=False, device_map="auto", device="cuda"):
     kwargs = {"device_map": device_map}
 
     if load_8bit:
@@ -44,6 +44,13 @@ def load_pretrained_model(model_path, model_base, model_name, model_version, mod
 
     if 'llava' in model_name.lower():
         # Load LLaVA model
+        
+        if model_version==None:
+            if 'verifier' in model_name.lower():
+                model_version = 'llava_verifier'
+            elif 'control' in model_name.lower():
+                model_version = 'llava_controller'
+
         if 'lora' in model_name.lower() and model_base is None:
             warnings.warn('There is `lora` in model name but no `model_base` is provided. If you are loading a LoRA model, please provide the `model_base` argument. Detailed instruction: https://github.com/haotian-liu/LLaVA#launch-a-model-worker-lora-weights-unmerged.')
         if 'lora' in model_name.lower() and model_base is not None:
