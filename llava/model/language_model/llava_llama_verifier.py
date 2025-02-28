@@ -75,7 +75,7 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         self.cross_attn = CrossAttention(config.hidden_size)
 
         if config.alpha_type == "scalar":
-            self.alpha = nn.Parameter(torch.tensor(0.0))
+            self.alpha = nn.Parameter(torch.tensor(0.1))
         elif config.alpha_type == "vector":
             self.alpha = nn.Parameter(torch.zeros(config.hidden_size))
         elif config.alpha_type == "matrix":
