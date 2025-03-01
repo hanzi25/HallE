@@ -1,10 +1,10 @@
 deepspeed --include localhost:3 --master_port 25432 llava/train/train_verifier.py \
     --deepspeed ./scripts/zero3.json \
-    --model_name_or_path /raid_sdi/home/zzy/model/llava_1_5 \
+    --model_name_or_path /raid_sdd/zzy/model/llava_1_5 \
     --version v1 \
-    --data_path /raid_sdi/home/zzy/data/halle/detail_switch_minus_1_9093.json \
-    --image_folder /raid_sdi/home/zzy/data/halle/coco/train2017 \
-    --vision_tower /raid_sdi/home/zzy/model/clip_vit_large_patch14_336 \
+    --data_path /raid_sdd/zzy/data/halle/detail_switch_minus_1_9093.json \
+    --image_folder /raid_sdd/zzy/data/halle/coco/train2017 \
+    --vision_tower /raid_sdd/zzy/model/clip_vit_large_patch14_336 \
     --mm_projector_type mlp2x_gelu \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
@@ -12,7 +12,7 @@ deepspeed --include localhost:3 --master_port 25432 llava/train/train_verifier.p
     --alpha_type scalar \
     --image_aspect_ratio pad \
     --bf16 True \
-    --output_dir /raid_sdi/home/zzy/experiments/halle/train/exp5_llava_verifier_scalar_init_0.1_minus1_9k_3ep_16bz_3e4 \
+    --output_dir /raid_sdd/zzy/experiments/halle/train/exp5_llava_verifier_scalar_init_0.1_minus1_9k_3ep_16bz_3e4 \
     --num_train_epochs 3 \
     --per_device_train_batch_size 16 \
     --per_device_eval_batch_size 4 \
