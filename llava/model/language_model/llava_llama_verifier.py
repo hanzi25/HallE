@@ -74,6 +74,8 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         
         self.cross_attn = CrossAttention(config.hidden_size)
 
+        if config.alpha_type is None:
+            self.alpha = None
         if config.alpha_type == "scalar":
             self.alpha = nn.Parameter(torch.tensor(0.1))
         elif config.alpha_type == "vector":
@@ -157,10 +159,13 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
             assert self.tmp_new_vision_embeds != None
             vision_cross = self.cross_attn(hidden_states, self.tmp_new_vision_embeds, self.tmp_new_vision_embeds)
 
-        if isinstance(self.alpha, nn.Linear):
+        if self.alpha is None:
+            hidden_states = hidden_states + vision_cross
+        elif isinstance(self.alpha, nn.Linear):
             hidden_states = hidden_states + self.alpha(vision_cross)
         elif isinstance(self.alpha, nn.Parameter):
             hidden_states = hidden_states + self.alpha * vision_cross
+
 
         ##############################
         ## Controller
