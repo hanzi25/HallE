@@ -142,46 +142,47 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         ##############################
         ## Vision Verifier
         ##############################
-        
-        if input_ids is None: # Training & First inference
-            system_len, image_len, user_query_len = length_group
-            output_vision_embeds = hidden_states[:, system_len:system_len+image_len, :]
-            text_embeds = hidden_states[:, system_len+image_len:, :]
+        if new_vision_embeds is not None:
             
-            self.tmp_new_vision_embeds = output_vision_embeds
-            assert output_vision_embeds.shape[1] == image_len
+            if input_ids is None: # Training & First inference
+                system_len, image_len, user_query_len = length_group
+                output_vision_embeds = hidden_states[:, system_len:system_len+image_len, :]
+                text_embeds = hidden_states[:, system_len+image_len:, :]
+                
+                self.tmp_new_vision_embeds = output_vision_embeds
+                assert output_vision_embeds.shape[1] == image_len
+                
+                vision_cross = torch.zeros_like(hidden_states)
+                vision_cross[:, system_len+image_len:, :] = self.cross_attn(text_embeds, output_vision_embeds, output_vision_embeds)
+                
             
-            vision_cross = torch.zeros_like(hidden_states)
-            vision_cross[:, system_len+image_len:, :] = self.cross_attn(text_embeds, output_vision_embeds, output_vision_embeds)
+            elif input_ids.shape[1] == 1: # Inference
+                assert self.tmp_new_vision_embeds != None
+                vision_cross = self.cross_attn(hidden_states, self.tmp_new_vision_embeds, self.tmp_new_vision_embeds)
+
+            if self.alpha is None:
+                hidden_states = hidden_states + vision_cross
+            elif isinstance(self.alpha, nn.Linear):
+                hidden_states = hidden_states + self.alpha(vision_cross)
+            elif isinstance(self.alpha, nn.Parameter):
+                hidden_states = hidden_states + self.alpha * vision_cross
+
+
+            ##############################
+            ## Controller
+            ##############################
+            # c+εWc
+            # if not (postive is None):
+            #     postive = postive.unsqueeze(1).unsqueeze(2)
+            #     tensor_type = hidden_states.dtype
+            #     hidden_states = hidden_states + postive * (self.W(hidden_states))
+            #     hidden_states = hidden_states.to(tensor_type)
+            # elif self.sigma:
+            #     tensor_type = hidden_states.dtype
+            #     hidden_states = hidden_states + self.sigma * (self.W(hidden_states))
+            #     hidden_states = hidden_states.to(tensor_type)
             
-        
-        elif input_ids.shape[1] == 1: # Inference
-            assert self.tmp_new_vision_embeds != None
-            vision_cross = self.cross_attn(hidden_states, self.tmp_new_vision_embeds, self.tmp_new_vision_embeds)
-
-        if self.alpha is None:
-            hidden_states = hidden_states + vision_cross
-        elif isinstance(self.alpha, nn.Linear):
-            hidden_states = hidden_states + self.alpha(vision_cross)
-        elif isinstance(self.alpha, nn.Parameter):
-            hidden_states = hidden_states + self.alpha * vision_cross
-
-
-        ##############################
-        ## Controller
-        ##############################
-        # c+εWc
-        # if not (postive is None):
-        #     postive = postive.unsqueeze(1).unsqueeze(2)
-        #     tensor_type = hidden_states.dtype
-        #     hidden_states = hidden_states + postive * (self.W(hidden_states))
-        #     hidden_states = hidden_states.to(tensor_type)
-        # elif self.sigma:
-        #     tensor_type = hidden_states.dtype
-        #     hidden_states = hidden_states + self.sigma * (self.W(hidden_states))
-        #     hidden_states = hidden_states.to(tensor_type)
-        
-        
+            
         
         logits = self.lm_head(hidden_states)
         loss = None
