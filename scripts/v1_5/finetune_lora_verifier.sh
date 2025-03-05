@@ -1,4 +1,4 @@
-deepspeed --include localhost:0 --master_port 25432 llava/train/train_with_verifier.py \
+deepspeed --include localhost:1 --master_port 25438 llava/train/train_with_verifier.py \
     --lora_enable True --lora_r 128 --lora_alpha 256 --mm_projector_lr 2e-5 \
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path /raid_sdd/zzy/model/vicuna-7b-v1.5 \
