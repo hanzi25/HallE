@@ -1,4 +1,4 @@
-deepspeed --include localhost:0 --master_port 25432 llava/train/train_with_verifier.py \
+deepspeed --include localhost:0 --master_port 25432 llava/train/train.py \
     --lora_enable True --lora_r 128 --lora_alpha 256 --mm_projector_lr 2e-5 \
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path /raid_sdd/zzy/model/vicuna-7b-v1.5 \
@@ -14,7 +14,7 @@ deepspeed --include localhost:0 --master_port 25432 llava/train/train_with_verif
     --image_aspect_ratio pad \
     --group_by_modality_length True \
     --bf16 True \
-    --output_dir /raid_sdd/zzy/experiments/halle/instruct/exp1_llava_vicuna_7b_v1.5_lora_with_verifier_mix665k_1ep_8bz_2e4 \
+    --output_dir /raid_sdd/zzy/experiments/halle/instruct/exp1_llava_vicuna_7b_v1.5_lora_mix665k_1ep_8bz_2e4 \
     --num_train_epochs 1 \
     --per_device_train_batch_size 8 \
     --per_device_eval_batch_size 4 \
@@ -32,6 +32,4 @@ deepspeed --include localhost:0 --master_port 25432 llava/train/train_with_verif
     --model_max_length 2048 \
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
-    --lazy_preprocess True \
-    --report_to wandb \
-    --wandb_project_name "llava_with_verifier"
+    --lazy_preprocess True

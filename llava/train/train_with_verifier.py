@@ -459,7 +459,7 @@ def preprocess_v1(
         total_len = int(target.ne(tokenizer.pad_token_id).sum())
 
         rounds = conversation.split(conv.sep2)
-        cur_len = 1
+        cur_len = 1 + 1
         target[:cur_len] = IGNORE_INDEX
         for i, rou in enumerate(rounds):
             if rou == "":
@@ -471,10 +471,10 @@ def preprocess_v1(
             parts[0] += sep
 
             if has_image:
-                round_len = len(tokenizer_image_token(rou, tokenizer))
+                round_len = len(tokenizer_image_token(rou, tokenizer)) - 2 + 1
                 instruction_len = len(tokenizer_image_token(parts[0], tokenizer)) - 2
             else:
-                round_len = len(tokenizer(rou).input_ids)
+                round_len = len(tokenizer(rou).input_ids) - 2 + 1
                 instruction_len = len(tokenizer(parts[0]).input_ids) - 2
 
             target[cur_len : cur_len + instruction_len] = IGNORE_INDEX
@@ -870,7 +870,7 @@ def train():
             cache_dir=training_args.cache_dir,
             model_max_length=training_args.model_max_length,
             padding_side="right",
-            use_fast=True,
+            use_fast=False,
         )
 
     if model_args.version == "v0":
