@@ -120,6 +120,8 @@ class LlavaMetaForCausalLM(ABC):
         new_labels = [] if labels is not None else None
         cur_image_idx = 0
         new_vision_embeds = []
+        length_group = None, None, None
+
         
         # print(len(input_ids))
         

@@ -175,20 +175,25 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
 
             if input_ids is None: # Training & First inference
                 system_len, image_len, user_query_len = length_group
-                output_vision_embeds = torch.zeros(hidden_states.shape[0], image_len, hidden_states.shape[2])
+                # output_vision_embeds = torch.zeros(hidden_states.shape[0], image_len, hidden_states.shape[2]).to(hidden_states.device)
+
+                output_vision_embeds = torch.zeros_like(hidden_states)[:,:image_len,:]
                 # output_vision_embeds = hidden_states[:, system_len:system_len+image_len, :]
-                text_embeds = torch.zeros(hidden_states.shape[0], image_len, hidden_states.shape[2]) # arbitrary length at dim=1 is fine
+                # text_embeds = torch.zeros(hidden_states.shape[0], image_len, hidden_states.shape[2]).to(hidden_states.device) 
+                
+                text_embeds = torch.zeros_like(hidden_states)[:,:image_len,:]
+                # arbitrary length at dim=1 is fine
                 # text_embeds = hidden_states[:, system_len+image_len:, :]
 
                 self.tmp_new_vision_embeds = output_vision_embeds
                 assert output_vision_embeds.shape[1] == image_len
                 
-                vision_cross = torch.zeros_like(hidden_states)
-                vision_cross[:, system_len+image_len:, :] = self.cross_attn(text_embeds, output_vision_embeds, output_vision_embeds)
+                vision_cross = torch.zeros_like(output_vision_embeds)
+                vision_cross = self.cross_attn(text_embeds, output_vision_embeds, output_vision_embeds)
                 
             
             elif input_ids.shape[1] == 1: # Inference
-                output_vision_embeds = torch.zeros(hidden_states.shape[0], image_len, hidden_states.shape[2])
+                output_vision_embeds = torch.zeros_like(hidden_states)[:,:image_len,:]
                 self.tmp_new_vision_embeds = output_vision_embeds
                 assert self.tmp_new_vision_embeds != None
                 vision_cross = self.cross_attn(hidden_states, self.tmp_new_vision_embeds, self.tmp_new_vision_embeds)
