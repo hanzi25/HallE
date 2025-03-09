@@ -237,6 +237,13 @@ class LlavaMetaForCausalLM(ABC):
                     new_attention_mask.append(cur_new_attention_mask)
                 attention_mask = torch.stack(new_attention_mask, dim=0)
                 assert attention_mask.shape == new_labels.shape
+                
+            if output_vision_embed and not is_all_zero:
+                new_vision_embeds = torch.stack(new_vision_embeds, dim=0)
+                length_group = system_len, image_len, user_query_len
+            else:
+                length_group = 35, 576, None
+                new_vision_embeds = torch.zeros(batch_idx, 576, 4096) # hacky fix
         else:
 
             # import pdb;
