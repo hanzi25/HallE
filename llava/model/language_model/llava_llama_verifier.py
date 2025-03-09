@@ -177,11 +177,12 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
                 system_len, image_len, user_query_len = length_group
                 # output_vision_embeds = torch.zeros(hidden_states.shape[0], image_len, hidden_states.shape[2]).to(hidden_states.device)
 
-                output_vision_embeds = torch.zeros_like(hidden_states)[:,:image_len,:]
+                # output_vision_embeds = torch.zeros_like(hidden_states)[:,:image_len,:]
                 # output_vision_embeds = hidden_states[:, system_len:system_len+image_len, :]
-                # text_embeds = torch.zeros(hidden_states.shape[0], image_len, hidden_states.shape[2]).to(hidden_states.device) 
+                output_vision_embeds = torch.zeros(hidden_states.shape[0], image_len, hidden_states.shape[2]).to(torch.bfloat16).to(hidden_states.device) 
                 
-                text_embeds = torch.zeros_like(hidden_states)[:,:image_len,:]
+                # text_embeds = torch.zeros_like(hidden_states)[:,:image_len,:]
+                text_embeds = torch.zeros(hidden_states.shape[0], image_len, hidden_states.shape[2]).to(torch.bfloat16).to(hidden_states.device) 
                 # arbitrary length at dim=1 is fine
                 # text_embeds = hidden_states[:, system_len+image_len:, :]
 
