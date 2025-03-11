@@ -120,6 +120,8 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         # import pdb; pdb.set_trace()
         
         input_ids, attention_mask, past_key_values, inputs_embeds, labels, new_vision_embeds, length_group = self.prepare_inputs_labels_for_multimodal(input_ids, attention_mask, past_key_values, labels, images, output_vision_embed=True)
+
+        is_all_zero = torch.all(new_vision_embeds == 0)
         # length_group = (system_len, image_len, user_query_len)
         # new_vision_embeds.shape = [bz, image_len, 4096], image_len = 576
         
@@ -142,8 +144,9 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         ##############################
         ## Vision Verifier
         ##############################
-        if new_vision_embeds is not None:
-            
+        if not is_all_zero:
+            self.cross_attn.requires_grad = True
+
             if input_ids is None: # Training & First inference
                 system_len, image_len, user_query_len = length_group
                 output_vision_embeds = hidden_states[:, system_len:system_len+image_len, :]
@@ -167,23 +170,48 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
             elif isinstance(self.alpha, nn.Parameter):
                 hidden_states = hidden_states + self.alpha * vision_cross
 
+        else:
+            self.cross_attn.requires_grad = False
 
-            ##############################
-            ## Controller
-            ##############################
-            # c+εWc
-            # if not (postive is None):
-            #     postive = postive.unsqueeze(1).unsqueeze(2)
-            #     tensor_type = hidden_states.dtype
-            #     hidden_states = hidden_states + postive * (self.W(hidden_states))
-            #     hidden_states = hidden_states.to(tensor_type)
-            # elif self.sigma:
-            #     tensor_type = hidden_states.dtype
-            #     hidden_states = hidden_states + self.sigma * (self.W(hidden_states))
-            #     hidden_states = hidden_states.to(tensor_type)
+            if input_ids is None: # Training & First inference
+                system_len, image_len, user_query_len = length_group
+                # output_vision_embeds = torch.zeros(hidden_states.shape[0], image_len, hidden_states.shape[2]).to(hidden_states.device)
+
+                # output_vision_embeds = torch.zeros_like(hidden_states)[:,:image_len,:]
+                # output_vision_embeds = hidden_states[:, system_len:system_len+image_len, :]
+                output_vision_embeds = torch.zeros(hidden_states.shape[0], image_len, hidden_states.shape[2]).to(torch.bfloat16).to(hidden_states.device) 
+                
+                # text_embeds = torch.zeros_like(hidden_states)[:,:image_len,:]
+                text_embeds = torch.zeros(hidden_states.shape[0], image_len, hidden_states.shape[2]).to(torch.bfloat16).to(hidden_states.device) 
+                # arbitrary length at dim=1 is fine
+                # text_embeds = hidden_states[:, system_len+image_len:, :]
+
+                self.tmp_new_vision_embeds = output_vision_embeds
+                assert output_vision_embeds.shape[1] == image_len
+                
+                vision_cross = torch.zeros_like(output_vision_embeds)
+                vision_cross = self.cross_attn(text_embeds, output_vision_embeds, output_vision_embeds)
+                
             
-            
-        
+            elif input_ids.shape[1] == 1: # Inference
+                output_vision_embeds = torch.zeros_like(hidden_states)[:,:image_len,:]
+                self.tmp_new_vision_embeds = output_vision_embeds
+                assert self.tmp_new_vision_embeds != None
+                vision_cross = self.cross_attn(hidden_states, self.tmp_new_vision_embeds, self.tmp_new_vision_embeds)
+                ##############################
+        ## Controller
+        ##############################
+        # c+εWc
+        # if not (postive is None):
+        #     postive = postive.unsqueeze(1).unsqueeze(2)
+        #     tensor_type = hidden_states.dtype
+        #     hidden_states = hidden_states + postive * (self.W(hidden_states))
+        #     hidden_states = hidden_states.to(tensor_type)
+        # elif self.sigma:
+        #     tensor_type = hidden_states.dtype
+        #     hidden_states = hidden_states + self.sigma * (self.W(hidden_states))
+        #     hidden_states = hidden_states.to(tensor_type)
+
         logits = self.lm_head(hidden_states)
         loss = None
         if labels is not None: # Training Stage

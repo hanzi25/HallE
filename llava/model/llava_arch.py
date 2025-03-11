@@ -100,12 +100,13 @@ class LlavaMetaForCausalLM(ABC):
         self, input_ids, attention_mask, past_key_values, labels, images, output_vision_embed=False
     ):
         vision_tower = self.get_vision_tower()
+        is_all_zero = torch.all(images == 0)
         
         if vision_tower is None or images is None or input_ids.shape[1] == 1:
             if past_key_values is not None and vision_tower is not None and images is not None and input_ids.shape[1] == 1:
                 attention_mask = torch.ones((attention_mask.shape[0], past_key_values[-1][-1].shape[-2] + 1), dtype=attention_mask.dtype, device=attention_mask.device)
             return input_ids, attention_mask, past_key_values, None, labels, None, None
-
+        
         if type(images) is list or images.ndim == 5:
             concat_images = torch.cat([image for image in images], dim=0)
             image_features = self.encode_images(concat_images)
@@ -119,6 +120,8 @@ class LlavaMetaForCausalLM(ABC):
         new_labels = [] if labels is not None else None
         cur_image_idx = 0
         new_vision_embeds = []
+        length_group = None, None, None
+
         
         # print(len(input_ids))
         
@@ -234,6 +237,13 @@ class LlavaMetaForCausalLM(ABC):
                     new_attention_mask.append(cur_new_attention_mask)
                 attention_mask = torch.stack(new_attention_mask, dim=0)
                 assert attention_mask.shape == new_labels.shape
+                
+            if output_vision_embed and not is_all_zero:
+                new_vision_embeds = torch.stack(new_vision_embeds, dim=0)
+                length_group = system_len, image_len, user_query_len
+            else:
+                length_group = 35, 576, None
+                new_vision_embeds = torch.zeros(batch_idx, 576, 4096) # hacky fix
         else:
 
             # import pdb;
@@ -248,11 +258,12 @@ class LlavaMetaForCausalLM(ABC):
                 attention_mask = torch.cat((new_attn_mask_pad_left, attention_mask), dim=1)
                 assert attention_mask.shape == new_input_embeds.shape[:2]
             
-            if output_vision_embed:
+            if output_vision_embed and not is_all_zero:
                 new_vision_embeds = torch.stack(new_vision_embeds, dim=0)
                 length_group = system_len, image_len, user_query_len
             else:
-                new_vision_embeds, length_group = None, None
+                length_group = 35, 576, None
+                new_vision_embeds = torch.zeros(batch_idx, 576, 4096) # hacky fix
 
         return None, attention_mask, past_key_values, new_input_embeds, new_labels, new_vision_embeds, length_group
 
