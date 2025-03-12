@@ -199,8 +199,8 @@ def eval_model(args):
         with torch.inference_mode():
 
             # import pdb; pdb.set_trace()
-            model.config.output_attentions = True  # 启用注意力输出
-            generated_ids, all_attention_scores = custom_generate_with_attention(model, input_ids, image_tensor, max_new_tokens=512)
+            # model.config.output_attentions = True  # 启用注意力输出
+            # generated_ids, all_attention_scores = custom_generate_with_attention(model, input_ids, image_tensor, max_new_tokens=512)
             # import pdb; pdb.set_trace()
 
             output_ids = model.generate(

@@ -32,10 +32,3 @@ deepspeed --include localhost:2,3 --master_port 25433 llava/train/train_verifier
     --dataloader_num_workers 4 \
     --lazy_preprocess True \
 
-#CUDA_VISIBLE_DEVICES=1 python3 eval/model_controller.py \
-#            --model-path $model_path \
-#            --model-version llava_verifier \
-#            --bf16 True \
-#            --gt_file_path /raid_sdd/zzy/data/halle/coco/coco2014/annotations/instances_val2014.json \
-#            --image_path /raid_sdd/zzy/data/halle/coco/coco2014/val2014 \
-#            --output_folder $model_path/eval
