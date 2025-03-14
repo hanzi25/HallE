@@ -78,6 +78,7 @@ class TrainingArguments(transformers.TrainingArguments):
     optim: str = field(default="adamw_torch")
     remove_unused_columns: bool = field(default=False)
     freeze_mm_mlp_adapter: bool = field(default=False)
+    freeze_alpha: bool = field(default=False)
     mpt_attn_impl: Optional[str] = field(default="triton")
     model_max_length: int = field(
         default=512,
@@ -925,8 +926,11 @@ def train():
                 print(name)
                 param.requires_grad = True
             if "alpha" in name:
-                print(name)
-                param.requires_grad = True
+                if training_args.freeze_alpha:
+                    param.requires_grad = False
+                else:
+                    print(name)
+                    param.requires_grad = True
         
         model.config.freeze_mm_mlp_adapter = training_args.freeze_mm_mlp_adapter
         if training_args.freeze_mm_mlp_adapter:
