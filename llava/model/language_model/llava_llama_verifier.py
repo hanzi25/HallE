@@ -73,11 +73,15 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         # self.W = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
         
         self.cross_attn = CrossAttention(config.hidden_size)
+        config.output_hidden_states = True
 
         if config.alpha_type is None:
             self.alpha = None
-        if config.alpha_type == "scalar":
-            self.alpha = nn.Parameter(torch.tensor(0.1))
+        elif config.alpha_type == "scalar":
+            if config.freeze_alpha:
+                self.alpha = 1.0
+            else:
+                self.alpha = nn.Parameter(torch.tensor(0.1))
         elif config.alpha_type == "vector":
             self.alpha = nn.Parameter(torch.zeros(config.hidden_size))
         elif config.alpha_type == "matrix":
@@ -138,7 +142,12 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         )
 
         hidden_states = outputs[0]
-        
+        # import pdb;
+        # pdb.set_trace()
+
+        # hidden_states = outputs.hidden_states[-2] # penultimate layer
+
+
         ##############################
         ## Vision Verifier
         ##############################

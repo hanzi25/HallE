@@ -1,4 +1,4 @@
-deepspeed --include localhost:3 --master_port 25431 llava/train/train_verifier.py \
+deepspeed --include localhost:2 --master_port 25437 llava/train/train_verifier.py \
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path /raid_sdd/zzy/model/llava_1_5 \
     --version v1 \
@@ -10,7 +10,7 @@ deepspeed --include localhost:3 --master_port 25431 llava/train/train_verifier.p
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
     --alpha_type scalar \
-    --freeze_alpha False \
+    --freeze_alpha True \
     --image_aspect_ratio pad \
     --bf16 True \
     --output_dir /raid_sdd/zzy/experiments/halle/train/exp7_llava_verifier_scalar_frozen_1.0_sharegpt_9k_1ep_16bz_3e5 \

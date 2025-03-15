@@ -812,6 +812,7 @@ def train():
         else:
             config = transformers.AutoConfig.from_pretrained(model_args.model_name_or_path, trust_remote_code=True)
             config.alpha_type = model_args.alpha_type
+            config.freeze_alpha = training_args.freeze_alpha,
             model = LlavaLlamaVerifierForCausalLM.from_pretrained(
                 model_args.model_name_or_path,
                 config=config,
@@ -926,11 +927,8 @@ def train():
                 print(name)
                 param.requires_grad = True
             if "alpha" in name:
-                if training_args.freeze_alpha:
-                    param.requires_grad = False
-                else:
-                    print(name)
-                    param.requires_grad = True
+                print(name)
+                param.requires_grad = True
         
         model.config.freeze_mm_mlp_adapter = training_args.freeze_mm_mlp_adapter
         if training_args.freeze_mm_mlp_adapter:
