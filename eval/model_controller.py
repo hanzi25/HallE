@@ -239,7 +239,7 @@ if __name__ == "__main__":
     parser.add_argument("--model-path", type=str, default="facebook/opt-350m")
     parser.add_argument("--model-base", type=str, default=None)
     parser.add_argument("--model-version", type=str, default="llava") # llava & llava_controller & llava_verifier
-    parser.add_argument("--model-vision", type=str, default="/raid_sdd/zzy/model/clip_vit_large_patch14_336")
+    parser.add_argument("--model-vision", type=str, default="/raid_sdi/home/zzy/model/clip_vit_large_patch14_336")
     parser.add_argument("--bf16", action='store_true') # vision verifier needs bf16 (if train in bf16, inference need to be bf16 not fp16)
     parser.add_argument("--sigma", type=float, default=0)
     parser.add_argument("--use_verifier", action='store_true')

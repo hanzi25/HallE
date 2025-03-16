@@ -96,7 +96,7 @@ class LlavaMetaForCausalLM(ABC):
         image_features = self.get_model().mm_projector(image_features)
         return image_features
 
-    def prepare_inputs_labels_for_multimodal(
+    def  prepare_inputs_labels_for_multimodal(
         self, input_ids, attention_mask, past_key_values, labels, images, output_vision_embed=False
     ):
         vision_tower = self.get_vision_tower()
@@ -120,16 +120,12 @@ class LlavaMetaForCausalLM(ABC):
         cur_image_idx = 0
         new_vision_embeds = []
         
-        # print(len(input_ids))
-        
         # <s>SYSTEM_PROMPT USER: <image> \nWrite a detailed description of the given image. ASSISTANT: IMAGE_CAPTION</s>
         # <s>A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions. USER: <image> \nWrite a detailed description of the given image. ASSISTANT: IMAGE_CAPTION</s>
         # IMAGE_TOKEN_INDEX = -200
         
         for batch_idx, cur_input_ids in enumerate(input_ids): # torch.Size([bz, seq_len]) 235
-            # print('k')
             if (cur_input_ids == IMAGE_TOKEN_INDEX).sum() == 0:
-                # print('p')
                 # multimodal LLM, but the current sample is not multimodal
                 # FIXME: this is a hacky fix, for deepspeed zero3 to work
                 half_len = cur_input_ids.shape[0] // 2
@@ -150,7 +146,6 @@ class LlavaMetaForCausalLM(ABC):
                 assert cur_labels.shape == cur_input_ids.shape
                 
             while image_token_indices.numel() > 0: # has_image
-                # print('l')
                 cur_image_features = image_features[cur_image_idx]
                 image_token_start = image_token_indices[0]
                 if getattr(self.config, 'tune_mm_mlp_adapter', False) and getattr(self.config, 'mm_use_im_start_end', False):
@@ -178,7 +173,6 @@ class LlavaMetaForCausalLM(ABC):
                 image_token_indices = torch.where(cur_input_ids == IMAGE_TOKEN_INDEX)[0]
                 
             if cur_input_ids.numel() > 0:
-                # print('m')
                 if getattr(self.config, 'tune_mm_mlp_adapter', False) and getattr(self.config, 'mm_use_im_start_end', False):
                     cur_new_input_embeds.append(self.get_model().embed_tokens(cur_input_ids).detach())
                 else:
@@ -189,18 +183,12 @@ class LlavaMetaForCausalLM(ABC):
             cur_new_input_embeds = [x.to(device=self.device) for x in cur_new_input_embeds]
             
             if output_vision_embed:
-
-                # import pdb;
-                # pdb.set_trace()
-
                 # len(cur_new_input_embeds) = 3
                 # [system_prompt_embed, vision_embed, user_query_embed]
                 # [torch.Size([35, 4096]), torch.Size([576, 4096]), torch.Size([seq_len, 4096])]
                 system_len, image_len, user_query_len = cur_new_input_embeds[0].shape[0], cur_new_input_embeds[1].shape[0], cur_new_input_embeds[2].shape[0]
                 cur_vision_embeds = cur_new_input_embeds[1]
                 new_vision_embeds.append(cur_vision_embeds)
-                
-                # print(batch_idx, cur_vision_embeds)
             
             cur_new_input_embeds = torch.cat(cur_new_input_embeds, dim=0)
             new_input_embeds.append(cur_new_input_embeds)
@@ -235,10 +223,6 @@ class LlavaMetaForCausalLM(ABC):
                 attention_mask = torch.stack(new_attention_mask, dim=0)
                 assert attention_mask.shape == new_labels.shape
         else:
-
-            # import pdb;
-            # pdb.set_trace()
-
             new_input_embeds = torch.stack(new_input_embeds, dim=0)
             if labels is not None:
                 new_labels  = torch.stack(new_labels, dim=0)
