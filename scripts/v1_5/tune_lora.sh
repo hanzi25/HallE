@@ -32,4 +32,7 @@ deepspeed --include localhost:3 --master_port 25438 llava/train/train.py \
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
     --lazy_preprocess True
+<<<<<<< HEAD
 
+=======
+>>>>>>> fix
