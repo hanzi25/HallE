@@ -73,9 +73,15 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         # self.W = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
         
         self.cross_attn = CrossAttention(config.hidden_size)
+        config.output_hidden_states = True
 
-        if config.alpha_type == "scalar":
-            self.alpha = nn.Parameter(torch.tensor(0.1))
+        if config.alpha_type is None:
+            self.alpha = None
+        elif config.alpha_type == "scalar":
+            if config.freeze_alpha:
+                self.alpha = 1.0 # must be float
+            else:
+                self.alpha = nn.Parameter(torch.tensor(0.1))
         elif config.alpha_type == "vector":
             self.alpha = nn.Parameter(torch.zeros(config.hidden_size))
         elif config.alpha_type == "matrix":
@@ -136,6 +142,8 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         )
 
         hidden_states = outputs[0]
+
+        # hidden_states = outputs.hidden_states[-2] # penultimate layer
         
         ##############################
         ## Vision Verifier
@@ -157,9 +165,11 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
             assert self.tmp_new_vision_embeds != None
             vision_cross = self.cross_attn(hidden_states, self.tmp_new_vision_embeds, self.tmp_new_vision_embeds)
 
-        if isinstance(self.alpha, nn.Linear):
+        if self.alpha is None:
+            hidden_states = hidden_states + vision_cross
+        elif isinstance(self.alpha, nn.Linear):
             hidden_states = hidden_states + self.alpha(vision_cross)
-        elif isinstance(self.alpha, nn.Parameter):
+        elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
             hidden_states = hidden_states + self.alpha * vision_cross
 
         ##############################

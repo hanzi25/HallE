@@ -212,7 +212,8 @@ def eval_model(args):
                 # max_new_tokens=1024,
                 use_cache=True,
                 stopping_criteria=[stopping_criteria],
-                )
+                output_hidden_states=True
+            )
 
         input_token_len = input_ids.shape[1]
         n_diff_input_output = (input_ids != output_ids[:, :input_token_len]).sum().item()
