@@ -20,6 +20,7 @@ from .language_model.llava_llama_verifier import LlavaLlamaVerifierForCausalLM, 
 -------------------------------------------------------------------------
 TO
 from .language_model.llava_llama_multi_verifier import LlavaLlamaVerifierForCausalLM, VerifierConfig
+-------------------------------------------------------------------------
 '''
 
 
@@ -163,72 +164,73 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         ##############################
         ## Vision Verifier
         ##############################
-        if new_vision_embeds is not None:
+        # import pdb; pdb.set_trace()
+
             
-            if input_ids is None: # Training & First inference
-                system_len, image_len, user_query_len = length_group
+        if input_ids is None: # Training & First inference
+            system_len, image_len, user_query_len = length_group
 
-                # layer -2 CA
-                output_vision_embeds_2 = hidden_states_2[:, system_len:system_len+image_len, :]
-                text_embeds_2 = hidden_states_2[:, system_len+image_len:, :]
-                
-                self.tmp_new_vision_embeds_2 = output_vision_embeds_2
-                assert output_vision_embeds_2.shape[1] == image_len
-                
-                vision_cross_2 = torch.zeros_like(hidden_states_2)
-                vision_cross_2[:, system_len+image_len:, :] = self.cross_attn_2(text_embeds_2, output_vision_embeds_2, output_vision_embeds_2)
-
-                if self.alpha is None:
-                    hidden_states_2 = hidden_states_2 + vision_cross_2
-                elif isinstance(self.alpha, nn.Linear):
-                    hidden_states_2 = hidden_states_2 + self.alpha(vision_cross_2)
-                elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
-                    hidden_states_2 = hidden_states_2 + self.alpha * vision_cross_2
-                
-                hidden_states_1 = self.model.layers[-1](hidden_states_2)
-                hidden_states_1 = hidden_states_1[0]
-                # import pdb; pdb.set_trace()
-                
-                # layer -1 CA
-                output_vision_embeds_1 = hidden_states_1[:, system_len:system_len+image_len, :]
-                text_embeds_1 = hidden_states_1[:, system_len+image_len:, :]
-                
-                self.tmp_new_vision_embeds_1 = output_vision_embeds_1
-                assert output_vision_embeds_1.shape[1] == image_len
-                
-                vision_cross_1 = torch.zeros_like(hidden_states_1)
-                vision_cross_1[:, system_len+image_len:, :] = self.cross_attn_1(text_embeds_1, output_vision_embeds_1, output_vision_embeds_1)
-
-                if self.alpha is None:
-                    hidden_states_1 = hidden_states_1 + vision_cross_1
-                elif isinstance(self.alpha, nn.Linear):
-                    hidden_states_1 = hidden_states_1 + self.alpha(vision_cross_1)
-                elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
-                    hidden_states_1 = hidden_states_1 + self.alpha * vision_cross_1
+            # layer -2 CA
+            output_vision_embeds_2 = hidden_states_2[:, system_len:system_len+image_len, :]
+            text_embeds_2 = hidden_states_2[:, system_len+image_len:, :]
             
-            elif input_ids.shape[1] == 1: # Inference
-                assert self.tmp_new_vision_embeds_1 != None
-                assert self.tmp_new_vision_embeds_2 != None
-                vision_cross_2 = self.cross_attn_2(hidden_states_2, self.tmp_new_vision_embeds_2, self.tmp_new_vision_embeds_2)
+            self.tmp_new_vision_embeds_2 = output_vision_embeds_2
+            assert output_vision_embeds_2.shape[1] == image_len
+            
+            vision_cross_2 = torch.zeros_like(hidden_states_2)
+            vision_cross_2[:, system_len+image_len:, :] = self.cross_attn_2(text_embeds_2, output_vision_embeds_2, output_vision_embeds_2)
 
-                if self.alpha is None:
-                    hidden_states_2 = hidden_states_2 + vision_cross_2
-                elif isinstance(self.alpha, nn.Linear):
-                    hidden_states_2 = hidden_states_2 + self.alpha(vision_cross_2)
-                elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
-                    hidden_states_2 = hidden_states_2 + self.alpha * vision_cross_2
-                
-                hidden_states_1 = self.model.layers[-1](hidden_states_2)
-                hidden_states_1 = hidden_states_1[0]
+            if self.alpha is None:
+                hidden_states_2 = hidden_states_2 + vision_cross_2
+            elif isinstance(self.alpha, nn.Linear):
+                hidden_states_2 = hidden_states_2 + self.alpha(vision_cross_2)
+            elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
+                hidden_states_2 = hidden_states_2 + self.alpha * vision_cross_2
+            
+            hidden_states_1 = self.model.layers[-1](hidden_states_2)
+            hidden_states_1 = hidden_states_1[0]
+            # import pdb; pdb.set_trace()
+            
+            # layer -1 CA
+            output_vision_embeds_1 = hidden_states_1[:, system_len:system_len+image_len, :]
+            text_embeds_1 = hidden_states_1[:, system_len+image_len:, :]
+            
+            self.tmp_new_vision_embeds_1 = output_vision_embeds_1
+            assert output_vision_embeds_1.shape[1] == image_len
+            
+            vision_cross_1 = torch.zeros_like(hidden_states_1)
+            vision_cross_1[:, system_len+image_len:, :] = self.cross_attn_1(text_embeds_1, output_vision_embeds_1, output_vision_embeds_1)
 
-                vision_cross_1 = self.cross_attn_1(hidden_states_1, self.tmp_new_vision_embeds_1, self.tmp_new_vision_embeds_1)
+            if self.alpha is None:
+                hidden_states_1 = hidden_states_1 + vision_cross_1
+            elif isinstance(self.alpha, nn.Linear):
+                hidden_states_1 = hidden_states_1 + self.alpha(vision_cross_1)
+            elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
+                hidden_states_1 = hidden_states_1 + self.alpha * vision_cross_1
+        
+        elif input_ids.shape[1] == 1: # Inference
+            assert self.tmp_new_vision_embeds_1 != None
+            assert self.tmp_new_vision_embeds_2 != None
+            vision_cross_2 = self.cross_attn_2(hidden_states_2, self.tmp_new_vision_embeds_2, self.tmp_new_vision_embeds_2)
 
-                if self.alpha is None:
-                    hidden_states_1 = hidden_states_1 + vision_cross_1
-                elif isinstance(self.alpha, nn.Linear):
-                    hidden_states_1 = hidden_states_1 + self.alpha(vision_cross_1)
-                elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
-                    hidden_states_1 = hidden_states_1 + self.alpha * vision_cross_1
+            if self.alpha is None:
+                hidden_states_2 = hidden_states_2 + vision_cross_2
+            elif isinstance(self.alpha, nn.Linear):
+                hidden_states_2 = hidden_states_2 + self.alpha(vision_cross_2)
+            elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
+                hidden_states_2 = hidden_states_2 + self.alpha * vision_cross_2
+            
+            hidden_states_1 = self.model.layers[-1](hidden_states_2)
+            hidden_states_1 = hidden_states_1[0]
+
+            vision_cross_1 = self.cross_attn_1(hidden_states_1, self.tmp_new_vision_embeds_1, self.tmp_new_vision_embeds_1)
+
+            if self.alpha is None:
+                hidden_states_1 = hidden_states_1 + vision_cross_1
+            elif isinstance(self.alpha, nn.Linear):
+                hidden_states_1 = hidden_states_1 + self.alpha(vision_cross_1)
+            elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
+                hidden_states_1 = hidden_states_1 + self.alpha * vision_cross_1
 
 
 
@@ -245,7 +247,6 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
             #     tensor_type = hidden_states.dtype
             #     hidden_states = hidden_states + self.sigma * (self.W(hidden_states))
             #     hidden_states = hidden_states.to(tensor_type)
-            
             
         
         logits = self.lm_head(hidden_states_1)
