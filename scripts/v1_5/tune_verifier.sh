@@ -1,4 +1,4 @@
-deepspeed --include localhost:1,3 --master_port 25437 llava/train/train_verifier.py \
+deepspeed --include localhost:1,2 --master_port 25437 llava/train/train_verifier.py \
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path /raid_sdi/home/zzy/model/llava_1_5 \
     --version v1 \
@@ -11,11 +11,12 @@ deepspeed --include localhost:1,3 --master_port 25437 llava/train/train_verifier
     --mm_use_im_patch_token False \
     --alpha_type scalar \
     --freeze_alpha True \
+    --logits_attend True \
     --image_aspect_ratio pad \
     --bf16 True \
-    --output_dir /raid_sdi/home/zzy/experiments/halle/train/exp9_llava_multi_verifier_15-31_scalar_frozen_0.01_sharegpt_9k_1ep_8bz_3e5 \
+    --output_dir /raid_sdi/home/zzy/experiments/halle/train/exp10_llava_verifier_logits_scalar_frozen_1.0_sharegpt_9k_1ep_16bz_3e5 \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 4 \
+    --per_device_train_batch_size 8 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 1 \
     --evaluation_strategy "no" \
