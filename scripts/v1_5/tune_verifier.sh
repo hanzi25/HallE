@@ -1,8 +1,8 @@
-deepspeed --include localhost:0 --master_port 25437 llava/train/train_verifier.py \
+deepspeed --include localhost:1,3 --master_port 25437 llava/train/train_verifier.py \
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path /raid_sdi/home/zzy/model/llava_1_5 \
     --version v1 \
-    --data_path /raid_sdi/home/zzy/data/halle/sharegpt4v_instruct_gpt4-vision_part_coco_sample_7k.json \
+    --data_path /raid_sdi/home/zzy/data/halle/sharegpt4v_instruct_gpt4-vision_part_coco_sample_9k.json \
     --image_folder /raid_sdi/home/zzy/data/halle/coco/train2017 \
     --vision_tower /raid_sdi/home/zzy/model/clip_vit_large_patch14_336 \
     --mm_projector_type mlp2x_gelu \
@@ -13,9 +13,9 @@ deepspeed --include localhost:0 --master_port 25437 llava/train/train_verifier.p
     --freeze_alpha True \
     --image_aspect_ratio pad \
     --bf16 True \
-    --output_dir /raid_sdi/home/zzy/experiments/halle/train/exp9_llava_multi_verifier_30-31_scalar_frozen_1.0_sharegpt_9k_1ep_16bz_3e5 \
+    --output_dir /raid_sdi/home/zzy/experiments/halle/train/exp9_llava_multi_verifier_15-31_scalar_frozen_0.01_sharegpt_9k_1ep_8bz_3e5 \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 8 \
+    --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 1 \
     --evaluation_strategy "no" \

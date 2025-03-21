@@ -92,7 +92,7 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
             self.alpha = None
         elif config.alpha_type == "scalar":
             if config.freeze_alpha:
-                self.alpha = 1.0 # must be float
+                self.alpha = 0.01 # must be float
             else:
                 self.alpha = nn.Parameter(torch.tensor(0.1))
         elif config.alpha_type == "vector":
@@ -157,7 +157,7 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
             return_dict=return_dict
         )
 
-        hidden_states_2 = outputs.hidden_states[-2]
+        hidden_states_2 = outputs.hidden_states[15]
 
         # hidden_states = outputs.hidden_states[-2] # penultimate layer
         
@@ -187,8 +187,16 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
             elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
                 hidden_states_2 = hidden_states_2 + self.alpha * vision_cross_2
             
-            hidden_states_1 = self.model.layers[-1](hidden_states_2)
-            hidden_states_1 = hidden_states_1[0]
+            intermediate_hidden = self.model.layers[16](hidden_states_2)
+            intermediate_hidden = intermediate_hidden[0]
+            for ind in range(17,32):
+                intermediate_hiddens = self.model.layers[ind](intermediate_hidden)
+                intermediate_hidden = intermediate_hiddens[0]
+            
+            hidden_states_1 = intermediate_hidden
+            
+            # hidden_states_1 = self.model.layers[-1](hidden_states_2)
+            # hidden_states_1 = hidden_states_1[0]
             # import pdb; pdb.set_trace()
             
             # layer -1 CA
@@ -219,9 +227,14 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
                 hidden_states_2 = hidden_states_2 + self.alpha(vision_cross_2)
             elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
                 hidden_states_2 = hidden_states_2 + self.alpha * vision_cross_2
+
+            intermediate_hidden = self.model.layers[16](hidden_states_2)
+            intermediate_hidden = intermediate_hidden[0]
+            for ind in range(17,32):
+                intermediate_hiddens = self.model.layers[ind](intermediate_hidden)
+                intermediate_hidden = intermediate_hiddens[0]
             
-            hidden_states_1 = self.model.layers[-1](hidden_states_2)
-            hidden_states_1 = hidden_states_1[0]
+            hidden_states_1 = intermediate_hidden
 
             vision_cross_1 = self.cross_attn_1(hidden_states_1, self.tmp_new_vision_embeds_1, self.tmp_new_vision_embeds_1)
 
