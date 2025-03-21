@@ -79,7 +79,7 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
             self.alpha = None
         elif config.alpha_type == "scalar":
             if config.freeze_alpha:
-                self.alpha = 0.1 # must be float
+                self.alpha = 1.0 # must be float
             else:
                 self.alpha = nn.Parameter(torch.tensor(0.1))
         elif config.alpha_type == "vector":
@@ -144,7 +144,6 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         hidden_states = outputs[0]
 
         # hidden_states = outputs.hidden_states[-2] # penultimate layer
-        
         ##############################
         ## Vision Verifier
         ##############################
