@@ -12,6 +12,17 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+'''
+To use this file, change the content in llava/model/__init__.py
+-------------------------------------------------------------------------
+FROM
+from .language_model.llava_llama_verifier import LlavaLlamaVerifierForCausalLM, VerifierConfig
+-------------------------------------------------------------------------
+TO
+from .language_model.llava_llama_multi_verifier import LlavaLlamaVerifierForCausalLM, VerifierConfig
+-------------------------------------------------------------------------
+'''
+
 
 from typing import List, Optional, Tuple, Union
 
@@ -72,7 +83,9 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         self.model = LlavaLlamaModel(config)
         # self.W = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
         
-        self.cross_attn = CrossAttention(config.hidden_size)
+        self.cross_attn_1 = CrossAttention(config.hidden_size)
+        self.cross_attn_2 = CrossAttention(config.hidden_size)
+
         config.output_hidden_states = True
 
         if config.alpha_type is None:
@@ -90,6 +103,9 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         
         self.tmp_new_vision_embeds = None
+
+        # import pdb; pdb.set_trace()
+
         
         # Initialize weights and apply final processing
         self.post_init()
@@ -141,53 +157,99 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
             return_dict=return_dict
         )
 
-        hidden_states = outputs[0]
+        hidden_states_2 = outputs.hidden_states[-2]
 
         # hidden_states = outputs.hidden_states[-2] # penultimate layer
+        
         ##############################
         ## Vision Verifier
         ##############################
+        # import pdb; pdb.set_trace()
+
             
         if input_ids is None: # Training & First inference
             system_len, image_len, user_query_len = length_group
-            output_vision_embeds = hidden_states[:, system_len:system_len+image_len, :]
-            text_embeds = hidden_states[:, system_len+image_len:, :]
+
+            # layer -2 CA
+            output_vision_embeds_2 = hidden_states_2[:, system_len:system_len+image_len, :]
+            text_embeds_2 = hidden_states_2[:, system_len+image_len:, :]
             
-            self.tmp_new_vision_embeds = output_vision_embeds
-            assert output_vision_embeds.shape[1] == image_len
+            self.tmp_new_vision_embeds_2 = output_vision_embeds_2
+            assert output_vision_embeds_2.shape[1] == image_len
             
-            vision_cross = torch.zeros_like(hidden_states)
-            vision_cross[:, system_len+image_len:, :] = self.cross_attn(text_embeds, output_vision_embeds, output_vision_embeds)
+            vision_cross_2 = torch.zeros_like(hidden_states_2)
+            vision_cross_2[:, system_len+image_len:, :] = self.cross_attn_2(text_embeds_2, output_vision_embeds_2, output_vision_embeds_2)
+
+            if self.alpha is None:
+                hidden_states_2 = hidden_states_2 + vision_cross_2
+            elif isinstance(self.alpha, nn.Linear):
+                hidden_states_2 = hidden_states_2 + self.alpha(vision_cross_2)
+            elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
+                hidden_states_2 = hidden_states_2 + self.alpha * vision_cross_2
             
+            hidden_states_1 = self.model.layers[-1](hidden_states_2)
+            hidden_states_1 = hidden_states_1[0]
+            # import pdb; pdb.set_trace()
+            
+            # layer -1 CA
+            output_vision_embeds_1 = hidden_states_1[:, system_len:system_len+image_len, :]
+            text_embeds_1 = hidden_states_1[:, system_len+image_len:, :]
+            
+            self.tmp_new_vision_embeds_1 = output_vision_embeds_1
+            assert output_vision_embeds_1.shape[1] == image_len
+            
+            vision_cross_1 = torch.zeros_like(hidden_states_1)
+            vision_cross_1[:, system_len+image_len:, :] = self.cross_attn_1(text_embeds_1, output_vision_embeds_1, output_vision_embeds_1)
+
+            if self.alpha is None:
+                hidden_states_1 = hidden_states_1 + vision_cross_1
+            elif isinstance(self.alpha, nn.Linear):
+                hidden_states_1 = hidden_states_1 + self.alpha(vision_cross_1)
+            elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
+                hidden_states_1 = hidden_states_1 + self.alpha * vision_cross_1
         
         elif input_ids.shape[1] == 1: # Inference
-            assert self.tmp_new_vision_embeds != None
-            vision_cross = self.cross_attn(hidden_states, self.tmp_new_vision_embeds, self.tmp_new_vision_embeds)
+            assert self.tmp_new_vision_embeds_1 != None
+            assert self.tmp_new_vision_embeds_2 != None
+            vision_cross_2 = self.cross_attn_2(hidden_states_2, self.tmp_new_vision_embeds_2, self.tmp_new_vision_embeds_2)
 
-        if self.alpha is None:
-            hidden_states = hidden_states + vision_cross
-        elif isinstance(self.alpha, nn.Linear):
-            hidden_states = hidden_states + self.alpha(vision_cross)
-        elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
-            hidden_states = hidden_states + self.alpha * vision_cross
+            if self.alpha is None:
+                hidden_states_2 = hidden_states_2 + vision_cross_2
+            elif isinstance(self.alpha, nn.Linear):
+                hidden_states_2 = hidden_states_2 + self.alpha(vision_cross_2)
+            elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
+                hidden_states_2 = hidden_states_2 + self.alpha * vision_cross_2
+            
+            hidden_states_1 = self.model.layers[-1](hidden_states_2)
+            hidden_states_1 = hidden_states_1[0]
 
-        ##############################
-        ## Controller
-        ##############################
-        # c+εWc
-        # if not (postive is None):
-        #     postive = postive.unsqueeze(1).unsqueeze(2)
-        #     tensor_type = hidden_states.dtype
-        #     hidden_states = hidden_states + postive * (self.W(hidden_states))
-        #     hidden_states = hidden_states.to(tensor_type)
-        # elif self.sigma:
-        #     tensor_type = hidden_states.dtype
-        #     hidden_states = hidden_states + self.sigma * (self.W(hidden_states))
-        #     hidden_states = hidden_states.to(tensor_type)
+            vision_cross_1 = self.cross_attn_1(hidden_states_1, self.tmp_new_vision_embeds_1, self.tmp_new_vision_embeds_1)
+
+            if self.alpha is None:
+                hidden_states_1 = hidden_states_1 + vision_cross_1
+            elif isinstance(self.alpha, nn.Linear):
+                hidden_states_1 = hidden_states_1 + self.alpha(vision_cross_1)
+            elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
+                hidden_states_1 = hidden_states_1 + self.alpha * vision_cross_1
+
+
+
+            ##############################
+            ## Controller
+            ##############################
+            # c+εWc
+            # if not (postive is None):
+            #     postive = postive.unsqueeze(1).unsqueeze(2)
+            #     tensor_type = hidden_states.dtype
+            #     hidden_states = hidden_states + postive * (self.W(hidden_states))
+            #     hidden_states = hidden_states.to(tensor_type)
+            # elif self.sigma:
+            #     tensor_type = hidden_states.dtype
+            #     hidden_states = hidden_states + self.sigma * (self.W(hidden_states))
+            #     hidden_states = hidden_states.to(tensor_type)
+            
         
-        
-        
-        logits = self.lm_head(hidden_states)
+        logits = self.lm_head(hidden_states_1)
         loss = None
         if labels is not None: # Training Stage
             # Shift so that tokens < n predict n
