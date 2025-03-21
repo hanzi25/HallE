@@ -90,6 +90,8 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         
         self.tmp_new_vision_embeds = None
+
+        self.logits_attend = config.logits_attend
         
         # Initialize weights and apply final processing
         self.post_init()
@@ -148,48 +150,79 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         ##############################
         ## Vision Verifier
         ##############################
+
+        if self.logits_attend == False:
             
-        if input_ids is None: # Training & First inference
-            system_len, image_len, user_query_len = length_group
-            output_vision_embeds = hidden_states[:, system_len:system_len+image_len, :]
-            text_embeds = hidden_states[:, system_len+image_len:, :]
+            if input_ids is None: # Training & First inference
+                system_len, image_len, user_query_len = length_group
+                output_vision_embeds = hidden_states[:, system_len:system_len+image_len, :]
+                text_embeds = hidden_states[:, system_len+image_len:, :]
+                
+                self.tmp_new_vision_embeds = output_vision_embeds
+                assert output_vision_embeds.shape[1] == image_len
+                
+                vision_cross = torch.zeros_like(hidden_states)
+                vision_cross[:, system_len+image_len:, :] = self.cross_attn(text_embeds, output_vision_embeds, output_vision_embeds)
+                
             
-            self.tmp_new_vision_embeds = output_vision_embeds
-            assert output_vision_embeds.shape[1] == image_len
+            elif input_ids.shape[1] == 1: # Inference
+                assert self.tmp_new_vision_embeds != None
+                vision_cross = self.cross_attn(hidden_states, self.tmp_new_vision_embeds, self.tmp_new_vision_embeds)
+
+            if self.alpha is None:
+                hidden_states = hidden_states + vision_cross
+            elif isinstance(self.alpha, nn.Linear):
+                hidden_states = hidden_states + self.alpha(vision_cross)
+            elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
+                hidden_states = hidden_states + self.alpha * vision_cross
+
+
+                ##############################
+                ## Controller
+                ##############################
+                # c+εWc
+                # if not (postive is None):
+                #     postive = postive.unsqueeze(1).unsqueeze(2)
+                #     tensor_type = hidden_states.dtype
+                #     hidden_states = hidden_states + postive * (self.W(hidden_states))
+                #     hidden_states = hidden_states.to(tensor_type)
+                # elif self.sigma:
+                #     tensor_type = hidden_states.dtype
+                #     hidden_states = hidden_states + self.sigma * (self.W(hidden_states))
+                #     hidden_states = hidden_states.to(tensor_type)
+                
+                
             
-            vision_cross = torch.zeros_like(hidden_states)
-            vision_cross[:, system_len+image_len:, :] = self.cross_attn(text_embeds, output_vision_embeds, output_vision_embeds)
-            
+            logits = self.lm_head(hidden_states)
         
-        elif input_ids.shape[1] == 1: # Inference
-            assert self.tmp_new_vision_embeds != None
-            vision_cross = self.cross_attn(hidden_states, self.tmp_new_vision_embeds, self.tmp_new_vision_embeds)
-
-        if self.alpha is None:
-            hidden_states = hidden_states + vision_cross
-        elif isinstance(self.alpha, nn.Linear):
-            hidden_states = hidden_states + self.alpha(vision_cross)
-        elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
-            hidden_states = hidden_states + self.alpha * vision_cross
-
-
-            ##############################
-            ## Controller
-            ##############################
-            # c+εWc
-            # if not (postive is None):
-            #     postive = postive.unsqueeze(1).unsqueeze(2)
-            #     tensor_type = hidden_states.dtype
-            #     hidden_states = hidden_states + postive * (self.W(hidden_states))
-            #     hidden_states = hidden_states.to(tensor_type)
-            # elif self.sigma:
-            #     tensor_type = hidden_states.dtype
-            #     hidden_states = hidden_states + self.sigma * (self.W(hidden_states))
-            #     hidden_states = hidden_states.to(tensor_type)
+        else:
+            if input_ids is None: # Training & First inference
+                system_len, image_len, user_query_len = length_group
+                output_vision_embeds = hidden_states[:, system_len:system_len+image_len, :]
+                text_embeds = hidden_states[:, system_len+image_len:, :]
+                
+                self.tmp_new_vision_embeds = output_vision_embeds
+                assert output_vision_embeds.shape[1] == image_len
+                
+                vision_cross = torch.zeros_like(hidden_states)
+                vision_cross[:, system_len+image_len:, :] = self.cross_attn(text_embeds, output_vision_embeds, output_vision_embeds)
+                
             
-            
-        
-        logits = self.lm_head(hidden_states)
+            elif input_ids.shape[1] == 1: # Inference
+                assert self.tmp_new_vision_embeds != None
+                vision_cross = self.cross_attn(hidden_states, self.tmp_new_vision_embeds, self.tmp_new_vision_embeds)
+
+            text_logits = self.lm_head(hidden_states)
+            cross_logits = self.lm_head(vision_cross)
+
+            if self.alpha is None:
+                logits = text_logits + cross_logits
+            elif isinstance(self.alpha, nn.Linear):
+                logits = text_logits + self.alpha(cross_logits)
+            elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
+                logits = text_logits + self.alpha * cross_logits
+
+
         loss = None
         if labels is not None: # Training Stage
             # Shift so that tokens < n predict n
