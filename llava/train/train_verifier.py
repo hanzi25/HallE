@@ -716,7 +716,6 @@ class LazySupervisedDataset(Dataset):
             # image does not exist in the data, but the model is multimodal
             crop_size = self.data_args.image_processor.crop_size
             data_dict['image'] = torch.zeros(3, crop_size['height'], crop_size['width'])
-        data_dict['postive'] = self.list_data_dict[i]['hall_factor']
         return data_dict
 
 
@@ -727,8 +726,8 @@ class DataCollatorForSupervisedDataset(object):
     tokenizer: transformers.PreTrainedTokenizer
 
     def __call__(self, instances: Sequence[Dict]) -> Dict[str, torch.Tensor]:
-        input_ids, postives, labels = tuple([instance[key] for instance in instances]
-                                  for key in ("input_ids", "postive", "labels"))
+        input_ids, labels = tuple([instance[key] for instance in instances]
+                                  for key in ("input_ids", "labels"))
         input_ids = torch.nn.utils.rnn.pad_sequence(
             input_ids,
             batch_first=True,
@@ -737,11 +736,9 @@ class DataCollatorForSupervisedDataset(object):
                                                  batch_first=True,
                                                  padding_value=IGNORE_INDEX)
         input_ids = input_ids[:, :self.tokenizer.model_max_length]
-        postives = torch.tensor(postives)
         labels = labels[:, :self.tokenizer.model_max_length]
         batch = dict(
             input_ids=input_ids,
-            postive=postives,
             labels=labels,
             attention_mask=input_ids.ne(self.tokenizer.pad_token_id),
         )
@@ -876,7 +873,7 @@ def train():
             cache_dir=training_args.cache_dir,
             model_max_length=training_args.model_max_length,
             padding_side="right",
-            use_fast=False,
+            use_fast=True,
         )
 
     if model_args.version == "v0":
