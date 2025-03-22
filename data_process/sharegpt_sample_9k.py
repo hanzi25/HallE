@@ -14,7 +14,7 @@ if len(tmp_data) < num_samples:
 
 sampled_data = random.sample(tmp_data, num_samples)
 
-output_path = "/raid_sdi/home/zzy/data/halle/sharegpt4v_instruct_gpt4-vision_part_coco_sample_7k.json"
+output_path = "/raid_sdi/home/zzy/data/halle/sharegpt4v_instruct_gpt4-vision_part_coco_sample_9k.json"
 with open(output_path, "w") as f:
     json.dump(sampled_data, f, indent=4)
 
