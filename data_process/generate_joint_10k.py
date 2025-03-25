@@ -14,7 +14,7 @@ joint_data = []
 with open(caption_data_path, "r") as f:
     tmp_data = json.load(f)
 
-num_caption_samples = 5000
+num_caption_samples = 4000
 if len(tmp_data) < num_caption_samples:
     raise ValueError("not enough data")
 
@@ -27,7 +27,7 @@ joint_data.extend(sampled_data)
 with open(qa_data_path, "r") as f:
     tmp_data = json.load(f)
 
-num_qa_samples = 3500
+num_qa_samples = 4000
 if len(tmp_data) < num_qa_samples:
     raise ValueError("not enough data")
 
@@ -40,7 +40,7 @@ joint_data.extend(sampled_data)
 with open(reasoning_data_path, "r") as f:
     tmp_data = json.load(f)
 
-num_reasoning_samples = 1500
+num_reasoning_samples = 2000
 if len(tmp_data) < num_reasoning_samples:
     raise ValueError("not enough data")
 
