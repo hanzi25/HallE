@@ -92,6 +92,8 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         self.tmp_new_vision_embeds = None
 
         self.logits_attend = config.logits_attend
+
+        self.use_original_vision = config.use_original_vision
         
         # Initialize weights and apply final processing
         self.post_init()
@@ -157,11 +159,15 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
                 output_vision_embeds = hidden_states[:, system_len:system_len+image_len, :]
                 text_embeds = hidden_states[:, system_len+image_len:, :]
                 
-                self.tmp_new_vision_embeds = output_vision_embeds
-                assert output_vision_embeds.shape[1] == image_len
+                if self.use_original_vision:
+                    self.tmp_new_vision_embeds = new_vision_embeds
+                    assert new_vision_embeds.shape[1] == image_len
+                else:
+                    self.tmp_new_vision_embeds = output_vision_embeds
+                    assert output_vision_embeds.shape[1] == image_len
                 
                 vision_cross = torch.zeros_like(hidden_states)
-                vision_cross[:, system_len+image_len:, :] = self.cross_attn(text_embeds, output_vision_embeds, output_vision_embeds)
+                vision_cross[:, system_len+image_len:, :] = self.cross_attn(text_embeds, self.tmp_new_vision_embeds, self.tmp_new_vision_embeds)
                 
             
             elif input_ids.shape[1] == 1: # Inference
@@ -199,12 +205,16 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
                 system_len, image_len, user_query_len = length_group
                 output_vision_embeds = hidden_states[:, system_len:system_len+image_len, :]
                 text_embeds = hidden_states[:, system_len+image_len:, :]
-                
-                self.tmp_new_vision_embeds = output_vision_embeds
-                assert output_vision_embeds.shape[1] == image_len
+
+                if self.use_original_vision:
+                    self.tmp_new_vision_embeds = new_vision_embeds
+                    assert new_vision_embeds.shape[1] == image_len
+                else:
+                    self.tmp_new_vision_embeds = output_vision_embeds
+                    assert output_vision_embeds.shape[1] == image_len
                 
                 vision_cross = torch.zeros_like(hidden_states)
-                vision_cross[:, system_len+image_len:, :] = self.cross_attn(text_embeds, output_vision_embeds, output_vision_embeds)
+                vision_cross[:, system_len+image_len:, :] = self.cross_attn(text_embeds, self.tmp_new_vision_embeds, self.tmp_new_vision_embeds)
                 
             
             elif input_ids.shape[1] == 1: # Inference

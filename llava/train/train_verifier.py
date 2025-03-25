@@ -80,6 +80,7 @@ class TrainingArguments(transformers.TrainingArguments):
     freeze_mm_mlp_adapter: bool = field(default=False)
     freeze_alpha: bool = field(default=False)
     logits_attend: bool = field(default=False)
+    use_original_vision: bool = field(default=False)
     mpt_attn_impl: Optional[str] = field(default="triton")
     model_max_length: int = field(
         default=512,
@@ -812,6 +813,7 @@ def train():
             config.alpha_type = model_args.alpha_type
             config.freeze_alpha = training_args.freeze_alpha
             config.logits_attend = training_args.logits_attend
+            config.use_original_vision = training_args.use_original_vision
             model = LlavaLlamaVerifierForCausalLM.from_pretrained(
                 model_args.model_name_or_path,
                 config=config,
