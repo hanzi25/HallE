@@ -1,6 +1,5 @@
 import json
 import random
-import numpy as np
 
 caption_data_path = "/raid_sdd/zzy/data/halle/sharegpt4v_instruct_gpt4-vision_part_coco_50k.json"
 qa_data_path = "/raid_sdd/zzy/data/halle/conversation_58k.json"
