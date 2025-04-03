@@ -3,14 +3,15 @@ import argparse
 from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix
 import json
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--results_dir', default='./LaVIN', type=str)
 
-eval_type_dict = {
+mme_eval_type_dict = {
     "Perception": ["existence", "count", "position", "color", "posters", "celebrity", "scene", "landmark", "artwork", "OCR"],
     "Cognition": ["commonsense_reasoning", "numerical_calculation", "text_translation", "code_reasoning"]
 }
 
+mme_hall_eval_type_dict = {
+    "Perception": ["existence", "count", "position", "color"]
+}
 
 class calculate_metrics:
     def divide_chunks(self, l, n=2):
@@ -83,7 +84,7 @@ class calculate_metrics:
         return metric_dict
 
 
-    def process_result(self, results_dir):
+    def process_result(self, results_dir, save_name, eval_type_dict):
 
         model_score_dict = dict()
         for eval_type, task_name_list in eval_type_dict.items():
@@ -158,7 +159,7 @@ class calculate_metrics:
             for task_name, score in task_score_dict.items():
                 model_score_dict[eval_type]['task_scores'][task_name] = score
         
-        eval_file = os.path.join(results_dir, "mme_evaluation_results.json")
+        eval_file = os.path.join(results_dir, save_name)
         with open(eval_file, "w") as file:
             json.dump(model_score_dict, file, indent=4)
         print("MME Evaluation Results Save in : ", eval_file)
@@ -171,7 +172,15 @@ class calculate_metrics:
 if __name__ == "__main__":
     cal = calculate_metrics()
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--results_dir', default='./LaVIN', type=str)
+    parser.add_argument('--save_name', default="mme_evaluation_results.json", type=str)
+    parser.add_argument("--mme_hall", action='store_true')
+
     args = parser.parse_args()
-    results_dir = args.results_dir
-    cal.process_result(results_dir)
+
+    if args.mme_hall:
+        cal.process_result(args.results_dir, args.save_name, mme_hall_eval_type_dict)
+    else:
+        cal.process_result(args.results_dir, args.save_name, mme_eval_type_dict)
 

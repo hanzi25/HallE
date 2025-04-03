@@ -1,5 +1,5 @@
 model_path=/raid_sdd/whz/experiments/halle/train/exp5_with_weight_attn_llava_verifier_matrix_minus1_9k_1ep_8bz_4e5
-CUDA_VISIBLE_DEVICES=1 python3 eval/model_controller.py \
+CUDA_VISIBLE_DEVICES=1 python3 ../model_controller.py \
             --model-path $model_path \
             --model-version llava_verifier \
             --bf16 \
@@ -18,7 +18,7 @@ CUDA_VISIBLE_DEVICES=1 python chair.py \
 
 
 # model_path=/raid_sdd/whz/experiments/halle/train/exp4_llava_controller_minus1_9k_1ep_8bz_2e5
-# CUDA_VISIBLE_DEVICES=1 python3 eval/model_controller.py \
+# CUDA_VISIBLE_DEVICES=1 python3 ../model_controller.py \
 #             --model-path $model_path \
 #             --model-version llava_controller \
 #             --bf16 True \

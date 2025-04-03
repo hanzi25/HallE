@@ -1,5 +1,5 @@
 model_path=/raid_sdd/whz/model/llava_1_5
-CUDA_VISIBLE_DEVICES=0 python3 eval/model_controller.py \
+CUDA_VISIBLE_DEVICES=0 python3 ../model_controller.py \
             --model-path $model_path \
             --model-version llava \
             --bf16 \
@@ -8,7 +8,7 @@ CUDA_VISIBLE_DEVICES=0 python3 eval/model_controller.py \
             --output_folder $model_path/eval_attention
 
 # model_path=/raid_sdd/whz/experiments/halle/train/exp5_llava_verifier_scalar_init_0.1_minus1_9k_1ep_4bz_3e5
-# CUDA_VISIBLE_DEVICES=0 python3 eval/model_controller.py \
+# CUDA_VISIBLE_DEVICES=0 python3 ../model_controller.py \
 #             --model-path $model_path \
 #             --model-version llava_verifier \
 #             --bf16 \

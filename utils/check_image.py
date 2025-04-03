@@ -1,5 +1,4 @@
 import json
-from tqdm import tqdm
 import os
 from PIL import Image
 from tqdm import tqdm

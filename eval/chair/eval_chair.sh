@@ -1,4 +1,4 @@
-python utils/chair.py \
+python chair.py \
     --cap_file /raid_sdd/zzy/experiments/halle/train/exp12_llava_verifier_logits_scalar_frozen_1.0_joint_5+3+1+detailed+qa1k_1ep_16bz_3e5/eval/llava_verifier.jsonl \
     --image_id_key image_id \
     --caption_key caption \
