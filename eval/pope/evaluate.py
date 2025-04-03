@@ -2,7 +2,7 @@ import os
 import json
 import argparse
 
-def eval_pope(answers, label_file):
+def eval_pope(answers, label_file, category, output_path):
     label_list = [json.loads(q)['label'] for q in open(label_file, 'r')]
 
     for answer in answers:
@@ -47,19 +47,24 @@ def eval_pope(answers, label_file):
         elif pred == neg and label == pos:
             FN += 1
 
-    print('TP\tFP\tTN\tFN\t')
-    print('{}\t{}\t{}\t{}'.format(TP, FP, TN, FN))
+    output_file = os.path.join(output_path, f'pope_evaluate_result_{category}.txt')
+    with open(output_file, 'w') as file:
 
-    precision = float(TP) / float(TP + FP)
-    recall = float(TP) / float(TP + FN)
-    f1 = 2*precision*recall / (precision + recall)
-    acc = (TP + TN) / (TP + TN + FP + FN)
-    print('Accuracy: {}'.format(acc))
-    print('Precision: {}'.format(precision))
-    print('Recall: {}'.format(recall))
-    print('F1 score: {}'.format(f1))
-    print('Yes ratio: {}'.format(yes_ratio))
-    print('%.3f, %.3f, %.3f, %.3f, %.3f' % (f1, acc, precision, recall, yes_ratio) )
+        print('TP\tFP\tTN\tFN\t', file=file)
+        print('{}\t{}\t{}\t{}'.format(TP, FP, TN, FN), file=file)
+
+        precision = float(TP) / float(TP + FP)
+        recall = float(TP) / float(TP + FN)
+        f1 = 2*precision*recall / (precision + recall)
+        acc = (TP + TN) / (TP + TN + FP + FN)
+        print('Accuracy: {}'.format(acc), file=file)
+        print('Precision: {}'.format(precision), file=file)
+        print('Recall: {}'.format(recall), file=file)
+        print('F1 score: {}'.format(f1), file=file)
+        print('Yes ratio: {}'.format(yes_ratio), file=file)
+        print('%.3f, %.3f, %.3f, %.3f, %.3f' % (f1, acc, precision, recall, yes_ratio) , file=file)
+
+    print("POPE Evaluation Results Save in : ", output_file)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -74,5 +79,5 @@ if __name__ == "__main__":
         result_file = os.path.join(args.output_path, f"result_coco_pope_{category}.json")
         cur_answers = [json.loads(q) for q in open(result_file)]
         print('Category: {}, # samples: {}'.format(category, len(cur_answers)))
-        eval_pope(cur_answers, os.path.join(args.annotation_dir, file))
+        eval_pope(cur_answers, os.path.join(args.annotation_dir, file), category, args.output_path)
         print("====================================")

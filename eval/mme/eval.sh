@@ -19,5 +19,5 @@ CUDA_VISIBLE_DEVICES=3 python eval.py \
     --output-path $output_path
 
 
-cd /raid_sdd/zzy/data/MME/eval_tool
+# cd /raid_sdd/zzy/data/MME/eval_tool
 python calculation.py --results_dir $output_path/mme_evaluation/
