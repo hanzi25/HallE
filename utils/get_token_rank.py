@@ -10,6 +10,7 @@ from llava.mm_utils import tokenizer_image_token, get_model_name_from_path, Keyw
 from PIL import Image
 import requests
 from io import BytesIO
+import matplotlib.pyplot as plt
 
 def load_image(image_file):
     if image_file.startswith('http') or image_file.startswith('https'):
@@ -27,14 +28,13 @@ def eval_single_example(args):
     tokenizer, model, image_processor, context_len = load_pretrained_model(
         model_path, args.model_base, model_name, args.model_version, args.model_vision, load_bf16=args.bf16
     )
-    
-    if args.model_version == 'llava_controller':
-        model.sigma = args.sigma
-    elif args.model_version == 'llava_verifier':
+    if args.model_version == 'llava_verifier':
         if not args.use_verifier:
-            model.alpha = torch.nn.Parameter(torch.tensor(0.0))
+            model.alpha = 0.0
+        else:
+            model.alpha = 1.0
     model = model.cuda()
-    
+
     # Prepare the query
     qs = args.query
     if model.config.mm_use_im_start_end:
@@ -42,7 +42,7 @@ def eval_single_example(args):
     else:
         qs = DEFAULT_IMAGE_TOKEN + '\n' + qs
     print("Query: ", qs)
-    
+
     # Set up the conversation
     conv_mode = args.conv_mode
     conv = conv_templates[conv_mode].copy()
@@ -59,13 +59,13 @@ def eval_single_example(args):
     
     # Tokenize the input
     input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).cuda()
-    
+
     # Set up stopping criteria
     stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
     keywords = [stop_str]
     stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
     
-    # Generate the output
+    # Generate the verified output
     with torch.inference_mode():
         output_ids = model.generate(
             input_ids,
@@ -74,17 +74,98 @@ def eval_single_example(args):
             temperature=0.2,
             max_length=1024,
             use_cache=True,
-            stopping_criteria=[stopping_criteria]
+            stopping_criteria=[stopping_criteria],
+            return_dict_in_generate=True,
+            output_scores=True
+        )
+    
+    # import pdb; pdb.set_trace()
+
+    # Decode the output
+    input_token_len = input_ids.shape[1]
+    outputs = tokenizer.batch_decode(output_ids["sequences"][:, input_token_len:], skip_special_tokens=True)[0]
+    outputs = outputs.strip()
+    if outputs.endswith(stop_str):
+        outputs = outputs[:-len(stop_str)]
+
+    verified_logits = output_ids["scores"]
+
+    print("Generated Caption:", outputs)
+    print()
+
+    # Generate the original output
+    with torch.inference_mode():
+        model.alpha = 0.0
+        output_ids = model.generate(
+            input_ids,
+            images=image_tensor,
+            do_sample=True,
+            temperature=0.2,
+            max_length=1024,
+            use_cache=True,
+            stopping_criteria=[stopping_criteria],
+            return_dict_in_generate=True,
+            output_scores=True
         )
     
     # Decode the output
     input_token_len = input_ids.shape[1]
-    outputs = tokenizer.batch_decode(output_ids[:, input_token_len:], skip_special_tokens=True)[0]
+    outputs = tokenizer.batch_decode(output_ids["sequences"][:, input_token_len:], skip_special_tokens=True)[0]
     outputs = outputs.strip()
     if outputs.endswith(stop_str):
         outputs = outputs[:-len(stop_str)]
-    
-    print("Generated Caption: ", outputs)
+
+    original_logits = output_ids["scores"]
+
+    print("Original Caption:", outputs)
+
+    # import pdb; pdb.set_trace()
+
+    # Token ranking
+    token_str = "bowl"
+    token_id = tokenizer.encode(token_str, add_special_tokens=False)[0]
+    token_ranks = get_token_rankings(verified_logits, token_id)
+    plot_token_rankings(token_str, token_ranks)
+
+
+def get_token_rankings(logits, target_token_id):
+    seq_len = len(logits)
+    vocab_size = logits[0].shape[-1]
+
+    token_ranks = []
+    for t in range(seq_len):
+        logits_t = logits[t]
+        rankings_t = torch.argsort(logits_t, dim=-1, descending=True)  # shape: (1, vocab_size)
+        rank = (rankings_t[0] == target_token_id).nonzero(as_tuple=False)
+        if len(rank) > 0:
+            token_ranks.append(rank.item())
+        else:
+            token_ranks.append(None)
+    return token_ranks
+
+def plot_token_rankings(token_str, token_ranks):
+    steps = list(range(len(token_ranks)))
+    ranks = [r + 1 if r >= 0 else 32000 for r in token_ranks] # in case of log(0)
+
+    plt.figure(figsize=(10, 4))
+    plt.plot(steps, ranks, linestyle='-')
+    plt.gca().invert_yaxis()  # 排名越高（数字越小）越靠上
+
+    plt.yscale('log')  # 设置 log 纵轴（对数坐标）
+    plt.yticks([1, 10, 100, 1000, 10000, 32000], labels=["1", "10", "100", "1k", "10k", "32k"])
+    plt.xlabel("Time Step")
+    plt.ylabel("Ranking of Token")
+    plt.title(f"Ranking of token '{token_str}' over time")
+    plt.grid(True)
+
+    # 添加文字标注
+    for x, y in zip(steps, ranks):
+        if y <= 10000:  # 如果不是 None
+            plt.annotate(f"{y}", (x, y), textcoords="offset points", xytext=(0, 5),
+                         ha='center', fontsize=8, color='blue')
+    # import pdb; pdb.set_trace()
+    plt.tight_layout()
+    plt.savefig("token_rank.png", dpi=300)
 
 
 if __name__ == "__main__":
@@ -96,7 +177,6 @@ if __name__ == "__main__":
     parser.add_argument("--model-version", type=str, default="llava")
     parser.add_argument("--model-vision", type=str, default="/raid_sdd/zzy/model/clip_vit_large_patch14_336")
     parser.add_argument("--bf16", action='store_true')
-    parser.add_argument("--sigma", type=float, default=0)
     parser.add_argument("--use_verifier", action='store_true')
     parser.add_argument("--image-file", type=str, required=True, help="Path to the single image file")
     parser.add_argument("--query", type=str, default="Describe this image as detailed as possible.")
