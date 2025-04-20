@@ -122,48 +122,81 @@ def eval_single_example(args):
     # import pdb; pdb.set_trace()
 
     # Token ranking
-    token_str = "bowl"
+    token_str = "door"
     token_id = tokenizer.encode(token_str, add_special_tokens=False)[0]
-    token_ranks = get_token_rankings(verified_logits, token_id)
-    plot_token_rankings(token_str, token_ranks)
+    original_token_ranks, verified_token_ranks = get_token_rankings(original_logits, verified_logits, token_id)
+    plot_token_rankings(token_str, original_token_ranks, verified_token_ranks)
 
 
-def get_token_rankings(logits, target_token_id):
-    seq_len = len(logits)
-    vocab_size = logits[0].shape[-1]
+def get_token_rankings(original_logits, verified_logits, target_token_id):
+    original_seq_len = len(original_logits)
+    original_vocab_size = original_logits[0].shape[-1]
 
-    token_ranks = []
-    for t in range(seq_len):
-        logits_t = logits[t]
-        rankings_t = torch.argsort(logits_t, dim=-1, descending=True)  # shape: (1, vocab_size)
-        rank = (rankings_t[0] == target_token_id).nonzero(as_tuple=False)
-        if len(rank) > 0:
-            token_ranks.append(rank.item())
+    original_token_ranks = []
+    for t in range(original_seq_len):
+        original_logits_t = original_logits[t]
+        original_rankings_t = torch.argsort(original_logits_t, dim=-1, descending=True)  # shape: (1, vocab_size)
+        original_rank = (original_rankings_t[0] == target_token_id).nonzero(as_tuple=False)
+        if len(original_rank) > 0:
+            original_token_ranks.append(original_rank.item())
         else:
-            token_ranks.append(None)
-    return token_ranks
+            original_token_ranks.append(None)
 
-def plot_token_rankings(token_str, token_ranks):
-    steps = list(range(len(token_ranks)))
-    ranks = [r + 1 if r >= 0 else 32000 for r in token_ranks] # in case of log(0)
+    verified_seq_len = len(verified_logits)
+    verified_vocab_size = verified_logits[0].shape[-1]
 
-    plt.figure(figsize=(10, 4))
-    plt.plot(steps, ranks, linestyle='-')
+    verified_token_ranks = []
+    for t in range(verified_seq_len):
+        verified_logits_t = verified_logits[t]
+        verified_rankings_t = torch.argsort(verified_logits_t, dim=-1, descending=True)
+        verified_rank = (verified_rankings_t[0] == target_token_id).nonzero(as_tuple=False)
+        if len(verified_rank) > 0:
+            verified_token_ranks.append(verified_rank.item())
+        else:
+            verified_token_ranks.append(None)
+    
+    return original_token_ranks, verified_token_ranks
+
+def plot_token_rankings(token_str, original_token_ranks, verified_token_ranks):
+    original_steps = list(range(len(original_token_ranks)))
+    original_ranks = [r + 1 if r >= 0 else 32000 for r in original_token_ranks] # in case of log(0)
+    verified_steps = list(range(len(verified_token_ranks)))
+    verified_ranks = [r + 1 if r >= 0 else 32000 for r in verified_token_ranks]
+
+    plt.figure(figsize=(10, 8))
+    plt.subplot(2,1,1)
+    plt.plot(original_steps, original_ranks, linestyle='-')
     plt.gca().invert_yaxis()  # 排名越高（数字越小）越靠上
 
     plt.yscale('log')  # 设置 log 纵轴（对数坐标）
     plt.yticks([1, 10, 100, 1000, 10000, 32000], labels=["1", "10", "100", "1k", "10k", "32k"])
     plt.xlabel("Time Step")
     plt.ylabel("Ranking of Token")
-    plt.title(f"Ranking of token '{token_str}' over time")
+    plt.title(f"Ranking of token '{token_str}' before revision over time")
     plt.grid(True)
 
     # 添加文字标注
-    for x, y in zip(steps, ranks):
-        if y <= 10000:  # 如果不是 None
+    for x, y in zip(original_steps, original_ranks):
+        if y <= 100:  # 如果不是 None
             plt.annotate(f"{y}", (x, y), textcoords="offset points", xytext=(0, 5),
                          ha='center', fontsize=8, color='blue')
-    # import pdb; pdb.set_trace()
+    
+    plt.subplot(2,1,2)
+    plt.plot(verified_steps, verified_ranks, linestyle='-')
+    plt.gca().invert_yaxis()  # 排名越高（数字越小）越靠上
+
+    plt.yscale('log')  # 设置 log 纵轴（对数坐标）
+    plt.yticks([1, 10, 100, 1000, 10000, 32000], labels=["1", "10", "100", "1k", "10k", "32k"])
+    plt.xlabel("Time Step")
+    plt.ylabel("Ranking of Token")
+    plt.title(f"Ranking of token '{token_str}' after revision over time")
+    plt.grid(True)
+
+    # 添加文字标注
+    for x, y in zip(verified_steps, verified_ranks):
+        if y <= 100:  # 如果不是 None
+            plt.annotate(f"{y}", (x, y), textcoords="offset points", xytext=(0, 5),
+                         ha='center', fontsize=8, color='blue')
     plt.tight_layout()
     plt.savefig("token_rank.png", dpi=300)
 
