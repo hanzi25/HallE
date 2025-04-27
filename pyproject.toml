@@ -21,7 +21,8 @@ dependencies = [
     "requests==2.32.3", "httpx==0.24.0", "uvicorn==0.34.0", "fastapi==0.115.8",
     "einops==0.6.1", "einops-exts==0.0.4", "timm==0.6.13", "nltk==3.9.1",
     "jupyter==1.1.1", "notebook==7.0.8", "jupyterlab==4.0.13",
-     "matplotlib==3.10.0", "opencv-python==4.11.0.86"
+    "matplotlib==3.10.0", "opencv-python==4.11.0.86",
+    "pycocoevalcap==1.2", "pycocotools==2.0.8",
 ]
 
 [project.optional-dependencies]

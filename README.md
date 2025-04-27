@@ -83,6 +83,20 @@ bash scripts/v1_5/model_control_eval.sh
 bash eval_chair.sh
 ```
 
+2. NoCaps
+- Install OpenJDK Runtime Environment "1.8.0_171"
+
+```Shell
+conda install -c rcdr_dep java-1.8.0-openjdk-cos6-x86_64
+```
+
+- Run evaluation script
+
+```Shell
+cd eval/caption
+bash eval_nocaps.sh
+```
+
 # Experiments
 
 1. LLaVA
