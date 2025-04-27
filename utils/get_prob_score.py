@@ -425,6 +425,7 @@ def logit_to_prob(logits, temp=1.0):
 
 def compute_prob_score(words, tokenizer, probs, ids, p=0.999):
     seq_len = len(probs)
+    num_words = len(words)
     vocab_size = probs[0].shape[-1]
     
     prob_score = 0.
@@ -449,7 +450,8 @@ def compute_prob_score(words, tokenizer, probs, ids, p=0.999):
 
             prob_score += matched_prob.item()
 
-    return prob_score / seq_len
+    if num_words: return prob_score / num_words
+    else: return prob_score
 
 
 def compute_metrics(args, coco_path, imid_to_objects, double_word_dict, mscoco_objects, inverse_synonym_dict, tokenizer, image_id, verified_outputs, verified_logits, original_outputs, original_logits):
@@ -515,7 +517,7 @@ def eval_model(args, coco_path, imid_to_objects, double_word_dict, mscoco_object
     # ========================================
     #            Load Evaluation File
     # ========================================
-    def load_coco_evaluation_file(args, number=100):
+    def load_coco_evaluation_file(args, number=500):
         # annotation_file: args.gt_file_path ( /raid_sdd/zzy/data/halle/coco/coco2014/annotations/instances_val2014.json )
         # image_path: args.image_path ()
         
@@ -587,7 +589,7 @@ def eval_model(args, coco_path, imid_to_objects, double_word_dict, mscoco_object
 
         # Generate the verified output
         with torch.inference_mode():
-
+            model.alpha = args.alpha
             # import pdb; pdb.set_trace()
             # model.config.output_attentions = True  # 启用注意力输出
             # generated_ids, all_attention_scores = custom_generate_with_attention(model, input_ids, image_tensor, max_new_tokens=512)
@@ -695,6 +697,7 @@ if __name__ == "__main__":
     parser.add_argument("--model-version", type=str, default="llava") # llava & llava_controller & llava_verifier
     parser.add_argument("--model-vision", type=str, default="/raid_sdd/zzy/model/clip_vit_large_patch14_336")
     parser.add_argument("--bf16", action='store_true') # vision verifier needs bf16 (if train in bf16, inference need to be bf16 not fp16)
+    parser.add_argument("--alpha", type=float, default=1.0)
     parser.add_argument("--sigma", type=float, default=0)
     parser.add_argument("--use_verifier", action='store_true')
     parser.add_argument("--gt_file_path", type=str, default='/raid_sdd/zzy/data/halle/coco/coco2014/annotations/instances_val2014.json')

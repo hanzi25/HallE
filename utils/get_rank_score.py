@@ -495,7 +495,7 @@ def eval_model(args, coco_path, imid_to_objects, double_word_dict, mscoco_object
     # ========================================
     #            Load Evaluation File
     # ========================================
-    def load_coco_evaluation_file(args, number=3):
+    def load_coco_evaluation_file(args, number=500):
         # annotation_file: args.gt_file_path ( /raid_sdd/zzy/data/halle/coco/coco2014/annotations/instances_val2014.json )
         # image_path: args.image_path ()
         
