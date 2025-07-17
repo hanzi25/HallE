@@ -8,7 +8,6 @@ from nltk.corpus import wordnet
 from nltk.stem import WordNetLemmatizer
 from collections import defaultdict
 import pickle
-import torch.nn.functional as F
 
 from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
 from llava.conversation import conv_templates, SeparatorStyle
@@ -165,21 +164,21 @@ def load_image(image_file):
 def save_result(path, args, results):
 
     if args.model_version == 'llava_controller':
-        save_file = f"{path}/prob_score_{args.model_version}_{args.sigma}.jsonl"
+        save_file = f"{path}/logit_score_{args.model_version}_{args.sigma}.jsonl"
     elif args.model_version == 'llava_verifier':
         if not args.use_verifier:
-            save_file = f"{path}/prob_score_{args.model_version}_no_verifier.jsonl"
+            save_file = f"{path}/logit_score_{args.model_version}_no_verifier.jsonl"
         else:
-            save_file = f"{path}/prob_score_{args.model_version}.jsonl"
+            save_file = f"{path}/logit_score_{args.model_version}.jsonl"
     else:
-        save_file = f"{path}/prob_score_{args.model_version}.jsonl"
+        save_file = f"{path}/logit_score_{args.model_version}.jsonl"
 
     transformed_results = []
     metrics_sums = {
-        'prob_score_gt_o': 0,
-        'prob_score_gt_v': 0,
-        'prob_score_hal_o': 0,
-        'prob_score_hal_v': 0,
+        'logit_score_gt_o': 0,
+        'logit_score_gt_v': 0,
+        'logit_score_hal_o': 0,
+        'logit_score_hal_v': 0,
         'grounded_words_count_o': 0,
         'grounded_words_count_v': 0,
         'omitted_words_count_o': 0,
@@ -203,10 +202,10 @@ def save_result(path, args, results):
             'omitted_words_count_v': item['omitted_words_count_v'],
             'mscoco_hallucinated_words_v': item['mscoco_hallucinated_words_v'],
             'hallucinated_words_count_v': item['hallucinated_words_count_v'],
-            'prob_score_gt_o': item['prob_score_gt_o'],
-            'prob_score_gt_v': item['prob_score_gt_v'],
-            'prob_score_hal_o': item['prob_score_hal_o'],
-            'prob_score_hal_v': item['prob_score_hal_v'],
+            'logit_score_gt_o': item['logit_score_gt_o'],
+            'logit_score_gt_v': item['logit_score_gt_v'],
+            'logit_score_hal_o': item['logit_score_hal_o'],
+            'logit_score_hal_v': item['logit_score_hal_v'],
         }
 
         for k in metrics_sums:
@@ -219,10 +218,9 @@ def save_result(path, args, results):
             "original_caption": item['original_caption'],
             "metrics": metrics
         })
-    # import pdb; pdb.set_trace()
 
     overall_metrics = {
-        k.replace('score', 'avg_score').replace('count', 'avg_count'): round(v / num_items, 8) for k, v in metrics_sums.items()
+        k.replace('score', 'avg_score').replace('count', 'avg_count'): round(v / num_items, 4) for k, v in metrics_sums.items()
     }
 
     final_output = {
@@ -413,45 +411,29 @@ def generate_wordlist(imid_to_objects, imid, cap, double_word_dict, mscoco_objec
     return grounded_words, omitted_words, hallucinated_words, gt_words, generated_words, raw_words
 
 
-def logit_to_prob(logits, temp=1.0):
-    scaled_logits = tuple(logit / temp for logit in logits)  # keep shape (seq_len, 1, 32000)
-    probs = tuple(F.softmax(logit, dim=-1) for logit in scaled_logits) # (seq_len, 1, 32000)
-
-    sorted_probs = tuple(torch.sort(prob, dim=-1, descending=True)[0] for prob in probs)
-    sorted_indices = tuple(torch.sort(prob, dim=-1, descending=True)[1] for prob in probs)
-    
-    return sorted_probs, sorted_indices
-
-
-def compute_prob_score(words, tokenizer, probs, ids, p=0.999):
-    seq_len = len(probs)
+def compute_logit_score(words, tokenizer, logits):
+    seq_len = len(logits)
     num_words = len(words)
-    vocab_size = probs[0].shape[-1]
-    
-    prob_score = 0.
+    vocab_size = logits[0].shape[-1]
+
+    logit_score = 0.
     for w in words:
         token_id = tokenizer.encode(w, add_special_tokens=False)[0]
+        target_logits = []
         for t in range(seq_len):
-            probs_t = probs[t][0]
-            ids_t = ids[t][0]  # shape(torch.Size[32000])
-            
-            cumulative_probs = torch.cumsum(probs_t, dim=-1)
-            prob_mask = cumulative_probs <= p
-            prob_mask[..., 0] = True
-            
-            token_id_tensor = torch.tensor(token_id, device=probs_t.device)
+            logits_t = logits[t]
+            target_logits.append(logits_t[0][token_id])
+        
+        target_logits = torch.stack(target_logits)
 
-            match_mask = (ids_t == token_id_tensor.unsqueeze(-1))
+        # import pdb; pdb.set_trace()
 
-            in_top_p = (match_mask & prob_mask)
+        for l in target_logits:
+            if l.item() > -float('inf'):
+                logit_score += l.item()
 
-            matched_probs = torch.where(in_top_p, probs_t, torch.tensor(0.0, device=probs_t.device))
-            matched_prob = matched_probs.sum(dim=-1)
-
-            prob_score += matched_prob.item()
-
-    if num_words: return (prob_score / num_words) / seq_len
-    else: return prob_score / seq_len
+    if num_words: return (logit_score / num_words) / seq_len
+    else: return logit_score / seq_len
 
 
 def compute_metrics(args, coco_path, imid_to_objects, double_word_dict, mscoco_objects, inverse_synonym_dict, tokenizer, image_id, verified_outputs, verified_logits, original_outputs, original_logits):
@@ -462,15 +444,12 @@ def compute_metrics(args, coco_path, imid_to_objects, double_word_dict, mscoco_o
 
     hallucinated_words = list(hallucinated_words_o | hallucinated_words_v)
 
-    probs_o, ids_o = logit_to_prob(original_logits)
-    probs_v, ids_v = logit_to_prob(verified_logits)
+    logit_score_gt_o = compute_logit_score(gt_words, tokenizer, original_logits)
+    logit_score_hal_o = compute_logit_score(hallucinated_words, tokenizer, original_logits)
+    logit_score_gt_v = compute_logit_score(gt_words, tokenizer, verified_logits)
+    logit_score_hal_v = compute_logit_score(hallucinated_words, tokenizer, verified_logits)
 
-    prob_score_gt_o = compute_prob_score(gt_words, tokenizer, probs_o, ids_o)
-    prob_score_hal_o = compute_prob_score(hallucinated_words, tokenizer, probs_o, ids_o)
-    prob_score_gt_v = compute_prob_score(gt_words, tokenizer, probs_v, ids_v)
-    prob_score_hal_v = compute_prob_score(hallucinated_words, tokenizer, probs_v, ids_v)
-
-    return list(grounded_words_o), list(omitted_words_o), list(hallucinated_words_o), list(grounded_words_v), list(omitted_words_v), list(hallucinated_words_v), prob_score_gt_o, prob_score_hal_o, prob_score_gt_v, prob_score_hal_v
+    return list(grounded_words_o), list(omitted_words_o), list(hallucinated_words_o), list(grounded_words_v), list(omitted_words_v), list(hallucinated_words_v), logit_score_gt_o, logit_score_hal_o, logit_score_gt_v, logit_score_hal_v
 
 
 def eval_model(args, coco_path, imid_to_objects, double_word_dict, mscoco_objects, inverse_synonym_dict):
@@ -658,9 +637,8 @@ def eval_model(args, coco_path, imid_to_objects, double_word_dict, mscoco_object
         print("Original Caption:", original_outputs)
 
         # Shape of logits: (seq_len, 1, 32000)
-        # import pdb; pdb.set_trace()
-
-        grounded_words_o, omitted_words_o, hallucinated_words_o, grounded_words_v, omitted_words_v, hallucinated_words_v, prob_score_gt_o, prob_score_hal_o, prob_score_gt_v, prob_score_hal_v = compute_metrics(args, coco_path, imid_to_objects, double_word_dict, mscoco_objects, inverse_synonym_dict, tokenizer, image_id, verified_outputs, verified_logits, original_outputs, original_logits)
+        
+        grounded_words_o, omitted_words_o, hallucinated_words_o, grounded_words_v, omitted_words_v, hallucinated_words_v, logit_score_gt_o, logit_score_hal_o, logit_score_gt_v, logit_score_hal_v = compute_metrics(args, coco_path, imid_to_objects, double_word_dict, mscoco_objects, inverse_synonym_dict, tokenizer, image_id, verified_outputs, verified_logits, original_outputs, original_logits)
 
         results.append({
             'image_id': image_id,
@@ -679,10 +657,10 @@ def eval_model(args, coco_path, imid_to_objects, double_word_dict, mscoco_object
             'omitted_words_count_v': len(omitted_words_v),
             'mscoco_hallucinated_words_v': hallucinated_words_v,
             'hallucinated_words_count_v': len(hallucinated_words_v),
-            'prob_score_gt_o': prob_score_gt_o,
-            'prob_score_gt_v': prob_score_gt_v,
-            'prob_score_hal_o': prob_score_hal_o,
-            'prob_score_hal_v': prob_score_hal_v,
+            'logit_score_gt_o': logit_score_gt_o,
+            'logit_score_gt_v': logit_score_gt_v,
+            'logit_score_hal_o': logit_score_hal_o,
+            'logit_score_hal_v': logit_score_hal_v,
         })
         
     save_result(path, args, results)

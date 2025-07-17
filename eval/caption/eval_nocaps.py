@@ -9,12 +9,13 @@ from llava.model.builder import load_pretrained_model
 from llava.utils import disable_torch_init
 from llava.mm_utils import tokenizer_image_token, get_model_name_from_path, KeywordsStoppingCriteria
 
+from pycocoevalcap.eval import COCOEvalCap
+from pycocotools.coco import COCO
 import requests
 from PIL import Image
 from io import BytesIO
 import json
 import random
-import datetime
 
 def load_image(image_file):
     if image_file.startswith('http') or image_file.startswith('https'):
@@ -25,46 +26,21 @@ def load_image(image_file):
     return image
 
 def save_result(path, args, results):
-    now = datetime.datetime.now()
-    time = now.strftime("%H%M%S")
-    current_time = f"{now.month}{now.day}{time}"
 
     if args.model_version == 'llava_controller':
-        save_file = f"{path}/{args.model_version}_{args.sigma}.jsonl"
+        save_file = f"{path}/nocaps_val_{args.model_version}_{args.sigma}.jsonl"
     elif args.model_version == 'llava_verifier':
         if not args.use_verifier:
-            save_file = f"{path}/{args.model_version}_no_verifier.jsonl"
+            save_file = f"{path}/nocaps_val_{args.model_version}_no_verifier.jsonl"
         else:
-            save_file = f"{path}/{args.model_version}.jsonl"
+            save_file = f"{path}/nocaps_val_{args.model_version}.jsonl"
     else:
-        save_file = f"{path}/{args.model_version}.jsonl"
+        save_file = f"{path}/nocaps_val_{args.model_version}.jsonl"
 
     with open(save_file, "w") as file:
-        for res in results:
-            json.dump(res, file)
-            file.write('\n')
+        json.dump(results, file)
 
-
-# 自定义生成方法，同时记录注意力分数
-def custom_generate_with_attention(model, input_ids, image_tensor, max_new_tokens=512):
-    generated_ids = input_ids.clone()
-
-    for _ in tqdm(range(max_new_tokens)):
-        outputs = model(input_ids=generated_ids, images=image_tensor, output_attentions=True)
-        
-        # 获取 logits 和当前时间步的注意力得分
-        logits = outputs.logits
-        attention_scores = outputs.attentions[-1]  # 获取最后一层的注意力
-
-        # 取最后一个时间步的输出 logits 并通过 softmax 采样生成 token
-        next_token = torch.argmax(logits[:, -1, :], dim=-1).unsqueeze(-1)
-        generated_ids = torch.cat([generated_ids, next_token], dim=-1)
-
-        # 如果达到结束 token，则停止生成
-        if next_token.item() == model.config.eos_token_id:
-            break
-
-    return generated_ids, attention_scores
+    return save_file
 
 def eval_model(args):
 
@@ -82,8 +58,6 @@ def eval_model(args):
         if not args.use_verifier:
             model.alpha = torch.nn.Parameter(torch.tensor(0.0))
     model = model.cuda()
-
-    import pdb; pdb.set_trace()
     
     qs = args.query
     if model.config.mm_use_im_start_end:
@@ -113,78 +87,39 @@ def eval_model(args):
     #            Load Evaluation File
     # ========================================
 
-    def load_vg_evaluation_file(args, number=100):
+    def load_nocaps_evaluation_file(args):
         # annotation_file: args.gt_file_path 
         # image_path: args.image_path
 
-        vg_path = args.gt_file_path
-        vg_objects = json.load(open('%s/objects.json' %(vg_path)))
-        vg_objects = vg_objects[:number]
-        image_ids = [obj['image_id'] for obj in vg_objects]
+        nocaps_instance_path = args.gt_file_path
+        with open(nocaps_instance_path, 'r') as f:
+            tmp_data = json.load(f)
+        new_tmp_data = tmp_data['annotations']
+        image_ids = list()
         image_files = list()
-        for id in tqdm(image_ids):
-            image_file = f'{args.image_path}/images2/VG_100K_2/{id}.jpg'
-            if not os.path.isfile(image_file):
-                image_file = f'{args.image_path}/images/VG_100K/{id}.jpg'
-            image_files.append(image_file)
-        return image_files, image_ids
-
-
-    def load_coco_evaluation_file(args, number=500):
-        # annotation_file: args.gt_file_path ( /raid_sdd/zzy/data/halle/coco/coco2014/annotations/instances_val2014.json )
-        # image_path: args.image_path ()
-        
-        # load image
-        img_files = os.listdir(args.image_path)
-
-        # load annotation and build img_dict
-        coco_instance_path = args.gt_file_path
-        with open(coco_instance_path, 'r') as f:
-            lines = f.readlines()
-        coco_anns = json.loads(lines[0])
-        img_dict = {}
-        categories = coco_anns["categories"]
-        category_dict = {int(c["id"]): c["name"] for c in categories}
-        for img_info in coco_anns["images"]:
-            img_dict[img_info["id"]] = {"name": img_info["file_name"], "anns": []}
-            
-        # for ann_info in coco_anns["annotations"]:
-        #     img_dict[ann_info["image_id"]]["anns"].append(
-        #         category_dict[ann_info["category_id"]]
-        #     )
-        
-        # select image and build image_files        
-        image_ids = list(img_dict.keys())[:number]
-        image_files = list()
-        for image_id in tqdm(image_ids):
-            image_name = f'COCO_val2014_{str(image_id).zfill(12)}.jpg'
-            if image_name in img_files:
-                image_file = f'{args.image_path}/{image_name}'
-                image_files.append(image_file)
-
-        print("Total number of image is ", len(image_files))
-        
-        return image_files, image_ids
+        for item in new_tmp_data:
+            image_id = item['image_id']
+            if image_id not in image_ids: image_ids.append(image_id)
+            image_file = f'{args.image_path}/{item["image"]}'
+            if image_file not in image_files: image_files.append(image_file)
+        return list(image_files), list(image_ids)
 
     # ========================================
     #      load image files and annotation
     # ========================================
     print("Start loading image files...")
-    if 'coco' in args.image_path:
-        image_files, image_ids = load_coco_evaluation_file(args)
-    elif 'vg' in args.image_path:
-        image_files, image_ids = load_vg_evaluation_file(args)
-    else:
-        print("Not support such image path: ", args.image_path)
-        return
+    image_files, image_ids = load_nocaps_evaluation_file(args)
 
     # ========================================
     #             Inference
     # ========================================
+    
     results = []
     for i in tqdm(range(len(image_files))):
         image_file = image_files[i]
         image_id = image_ids[i]
+        
+        # import pdb; pdb.set_trace()
 
         image = load_image(image_file)
         if args.bf16:
@@ -200,13 +135,6 @@ def eval_model(args):
 
         with torch.inference_mode():
 
-            # import pdb; pdb.set_trace()
-            # model.config.output_attentions = True  # 启用注意力输出
-            # generated_ids, all_attention_scores = custom_generate_with_attention(model, input_ids, image_tensor, max_new_tokens=512)
-            # import pdb; pdb.set_trace()
-
-            model.alpha = args.alpha
-
             output_ids = model.generate(
                 input_ids,
                 images=image_tensor,
@@ -216,6 +144,7 @@ def eval_model(args):
                 # max_new_tokens=1024,
                 use_cache=True,
                 stopping_criteria=[stopping_criteria],
+                output_hidden_states=True
             )
 
         input_token_len = input_ids.shape[1]
@@ -229,15 +158,27 @@ def eval_model(args):
         outputs = outputs.strip()
         results.append({
             'image_id':image_id,
-            'image_file':image_file, 
             'caption':outputs
             })
         print(image_id, outputs)
 
-    save_result(path, args, results)
+    result_file = save_result(path, args, results)
+
+    # COCO评估
+    coco = COCO(args.gt_file_path)
+    coco_result = coco.loadRes(result_file)
+    coco_eval = COCOEvalCap(coco, coco_result)
+    coco_eval.params["image_id"] = coco_result.getImgIds()
+    coco_eval.evaluate()
+    
+    # 打印评估指标
+    for metric, score in coco_eval.eval.items():
+        print(f"{metric}: {score:.3f}")
 
     
 if __name__ == "__main__":
+    torch.manual_seed(42)
+    torch.cuda.manual_seed(42)
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-path", type=str, default="facebook/opt-350m")
     parser.add_argument("--model-base", type=str, default=None)
@@ -245,15 +186,10 @@ if __name__ == "__main__":
     parser.add_argument("--model-vision", type=str, default="/raid_sdd/zzy/model/clip_vit_large_patch14_336")
     parser.add_argument("--bf16", action='store_true') # vision verifier needs bf16 (if train in bf16, inference need to be bf16 not fp16)
     parser.add_argument("--sigma", type=float, default=0)
-    parser.add_argument("--alpha", type=float, default=1.0)
     parser.add_argument("--use_verifier", action='store_true')
     parser.add_argument("--gt_file_path", type=str, default='/raid_sdd/zzy/data/halle/coco/coco2014/annotations/instances_val2014.json')
     parser.add_argument("--image_path", type=str, default='/raid_sdd/zzy/data/halle/coco/coco2014/val2014')
-    parser.add_argument("--query", type=str, default="Describe this image as detailed as possible.")
-    # parser.add_argument("--query", type=str, default="Describe this image in detail.")
-    # parser.add_argument("--query", type=str, default="Please help me describe the image in detail.")
-    # parser.add_argument("--query", type=str, default="Provide a detailed description of the image.")
-    # parser.add_argument("--query", type=str, default="What is happening in this image?")
+    parser.add_argument("--query", type=str, default="Describe this image in one sentence.")
     parser.add_argument("--conv-mode", type=str, default='v1')
     parser.add_argument("--output_folder", type=str, default='./')
     args = parser.parse_args()

@@ -44,11 +44,12 @@ o_hal_mean, o_hal_var = calc_stats(o_hallucinations)
 # ===== 打印统计结果 =====
 print("=== 文本统计量 ===")
 print("Verified Caption:")
-print(f"  Seq Len: μ = {v_word_mean:.1f} ± σ² = {v_word_var:.1f}\n")
-print(f"  Word Count: μ = {v_word_mean:.1f} ± σ² = {v_word_var:.1f}\n")
+print(f"  Seq Len: μ = {v_word_mean:.3f} ± σ² = {v_word_var:.3f}\n")
+print(f"  Word Count: μ = {v_hal_mean:.3f} ± σ² = {v_hal_var:.3f}\n")
 
 print("Original Caption:")
-print(f"  Seq Len: μ = {o_word_mean:.1f} ± σ² = {o_word_var:.1f}\n")
+print(f"  Seq Len: μ = {o_word_mean:.3f} ± σ² = {o_word_var:.3f}\n")
+print(f"  Word Count: μ = {o_hal_mean:.3f} ± σ² = {o_hal_var:.3f}\n")
 
 # ===== 保留原有分析代码 =====
 # 计算相关系数
@@ -59,8 +60,8 @@ corr_spearman_o, p_spearman_o = spearmanr(original_lengths, o_hallucinations)
 
 # 打印相关分析结果
 print("=== 相关性分析 ===")
-print(f"Verified Caption: Pearson r = {corr_pearson_v:.3f}, Spearman ρ = {corr_spearman_v:.3f}")
-print(f"Original Caption: Pearson r = {corr_pearson_o:.3f}, Spearman ρ = {corr_spearman_o:.3f}")
+print(f"Verified Caption: Pearson r = {corr_pearson_v:.3f}, p = {p_pearson_v}; Spearman ρ = {corr_spearman_v:.3f}, p = {p_spearman_v:.8f}")
+print(f"Original Caption: Pearson r = {corr_pearson_o:.3f}, p = {p_pearson_o}; Spearman ρ = {corr_spearman_o:.3f}, p = {p_spearman_o:.8f}")
 
 # 绘制散点图（保持原有可视化代码不变）
 plt.figure(figsize=(12, 5))

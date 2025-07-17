@@ -44,6 +44,8 @@ class CrossAttention(nn.Module):
         self.W_k = nn.Linear(hidden_size, hidden_size, bias=False)
         self.W_v = nn.Linear(hidden_size, hidden_size, bias=False)
         self.scaling = hidden_size ** -0.5
+        self.ca_attn = list()
+        
             
     def forward(self, query, key, value):
         
@@ -60,6 +62,8 @@ class CrossAttention(nn.Module):
         context = torch.matmul(attn, value)
 
         # import pdb; pdb.set_trace()
+
+        # self.ca_attn.append(attn)
         
         return context        
 
@@ -97,6 +101,11 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         
         # Initialize weights and apply final processing
         self.post_init()
+
+        self.original_logits = list()
+        self.revised_logits = list()
+        self.logits = list()
+
 
     def get_model(self):
         return self.model
@@ -231,6 +240,9 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
             elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
                 logits = text_logits + self.alpha * cross_logits
 
+            # self.original_logits.append(text_logits[0])
+            # self.revised_logits.append(cross_logits[0])
+            # self.logits.append(logits[0])
 
         loss = None
         if labels is not None: # Training Stage

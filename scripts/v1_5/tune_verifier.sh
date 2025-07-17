@@ -1,8 +1,8 @@
-deepspeed --include localhost:3 --master_port 25437 llava/train/train_verifier.py \
+deepspeed --include localhost:1 --master_port 25437 llava/train/train_verifier.py \
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path /raid_sdd/zzy/model/llava_1_5 \
     --version v1 \
-    --data_path /raid_sdd/zzy/data/halle/joint_caption_5.0k_qa_3.0k_reasoning_1.0k_halva_detailed+qa_1.0k.json \
+    --data_path  /raid_sdd/zzy/data/halle/joint_caption_8.0k_qa_0.3k_reasoning_0.1k_halva_detailed+qa_0.0k.json \
     --image_folder /raid_sdd/zzy/data/halle \
     --vision_tower /raid_sdd/zzy/model/clip_vit_large_patch14_336 \
     --mm_projector_type mlp2x_gelu \
@@ -15,7 +15,7 @@ deepspeed --include localhost:3 --master_port 25437 llava/train/train_verifier.p
     --use_original_vision False \
     --image_aspect_ratio pad \
     --bf16 True \
-    --output_dir /raid_sdd/zzy/experiments/halle/train/exp12_llava_verifier_logits_scalar_frozen_1.0_joint_5+3+1+detailed+qa1k_1ep_16bz_3e5 \
+    --output_dir /raid_sdd/zzy/experiments/halle/train/exp12_llava_verifier_logits_scalar_frozen_1.0_joint_8+0.3+0.1_1ep_16bz_3e5 \
     --num_train_epochs 1 \
     --per_device_train_batch_size 16 \
     --per_device_eval_batch_size 4 \
