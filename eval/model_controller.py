@@ -83,7 +83,7 @@ def eval_model(args):
             model.alpha = torch.nn.Parameter(torch.tensor(0.0))
     model = model.cuda()
 
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     
     qs = args.query
     if model.config.mm_use_im_start_end:
@@ -216,6 +216,7 @@ def eval_model(args):
                 # max_new_tokens=1024,
                 use_cache=True,
                 stopping_criteria=[stopping_criteria],
+                output_hidden_states=True
             )
 
         input_token_len = input_ids.shape[1]
