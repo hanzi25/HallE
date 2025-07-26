@@ -26,10 +26,10 @@
 #     --results_dir $output_path/mme_evaluation/
 
 
-output_path=/raid_sdd/zzy/model/llava_1_5/eval/mme
+output_path=/raid_sdd/zzy/experiments/halle/train/exp14_llava_lora_joint_6+3+1+1.5k_layer32_1ep_16bz_3e5_merged/eval/mme
 
-CUDA_VISIBLE_DEVICES=2 python eval.py \
-    --model-path /raid_sdd/zzy/model/llava_1_5 \
+CUDA_VISIBLE_DEVICES=3 python eval.py \
+    --model-path /raid_sdd/zzy/experiments/halle/train/exp14_llava_lora_joint_6+3+1+1.5k_layer32_1ep_16bz_3e5_merged \
     --model-version llava \
     --bf16 \
     --mme-path /raid_sdd/zzy/data/MME \

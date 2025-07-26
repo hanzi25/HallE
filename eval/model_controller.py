@@ -239,6 +239,8 @@ def eval_model(args):
 
     
 if __name__ == "__main__":
+    torch.manual_seed(2025)
+    torch.cuda.manual_seed(2025)
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-path", type=str, default="facebook/opt-350m")
     parser.add_argument("--model-base", type=str, default=None)
