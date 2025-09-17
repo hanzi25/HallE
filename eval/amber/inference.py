@@ -193,7 +193,7 @@ def main(args):
             truth = ground_truth[id-1]['truth']
             response = inference_data[i]['response']
             if truth == 'yes':
-                if response == 'Yes':
+                if 'Yes' in response.split()[0]:
                     metrics['qa_correct_score'] += 1
                     if ground_truth[id-1]['type'] == 'discriminative-attribute-state':
                         metrics['as_qa_correct_score'] += 1
@@ -218,7 +218,7 @@ def main(args):
                 else:
                     metrics['asso_qa_no_num'] += 1
                 
-                if response == 'No':
+                if 'No' in response.split()[0]:
                     metrics['qa_correct_score'] += 1
                     metrics['qa_no_score'] += 1
                     if ground_truth[id-1]['type'] == 'discriminative-attribute-state':
@@ -237,7 +237,7 @@ def main(args):
                         metrics['asso_qa_correct_score'] += 1
                         metrics['asso_qa_no_score'] += 1
             
-            if response == 'No':
+            if 'No' in response.split()[0]:
                 metrics['qa_ans_no_num'] += 1
                 if ground_truth[id-1]['type'] == 'discriminative-attribute-state':
                     metrics['as_qa_ans_no_num'] += 1

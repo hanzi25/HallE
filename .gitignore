@@ -27,3 +27,5 @@ ckpts*
 
 *.pkl
 
+eval/amber/en_core_web_lg-3.7.1.tar.gz
+eval/amber/en_core_web_sm-3.7.1.tar.gz

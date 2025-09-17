@@ -60,11 +60,10 @@ def model_gen(args, model, tokenizer, image_processor, text, image_file ):
         output_ids = model.generate(
             input_ids,
             images=image_tensor,
-            temperature=1.0,
+            temperature=0.2,
             max_new_tokens=5, 
-            num_beams=5,
-            do_sample=False,
-            repetition_penalty=1.0,
+            num_beams=1,
+            do_sample=True,
         )
     
     # Decode the output

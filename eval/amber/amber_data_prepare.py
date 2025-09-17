@@ -11,8 +11,8 @@ def check_image(image_file, dd):
         return (dd['image'], str(e))
 
 if __name__ == "__main__":
-    file = "/home/whz/code/AMBER/data/query/query_generative.json"
-    image_path = "/raid_sdd/whz/data/AMBER/image"
+    file = "/raid_sdd/zzy/data/AMBER/AMBER/data/query/query_all.json"
+    image_path = "/raid_sdd/zzy/data/AMBER/image"
 
     with open(file, "r") as f:
         questions = eval(f.read())
@@ -38,6 +38,6 @@ if __name__ == "__main__":
     
     print("Error: ", len(error))
 
-    with open("/raid_sdd/whz/data/AMBER/query_generative_prepared.jsonl", "w") as f:
+    with open("/raid_sdd/zzy/data/AMBER/query_all_prepared.jsonl", "w") as f:
         for dd in data:
             f.write(json.dumps(dd)+'\n')

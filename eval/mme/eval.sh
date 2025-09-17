@@ -11,14 +11,17 @@
 
 
 
-# output_path=/raid_sdd/zzy/experiments/halle/train/exp12_llava_verifier_logits_scalar_frozen_1.0_joint_8+0.3+0.1_1ep_16bz_3e5/eval/mme
-# CUDA_VISIBLE_DEVICES=1 python eval.py \
-#     --model-path /raid_sdd/zzy/experiments/halle/train/exp12_llava_verifier_logits_scalar_frozen_1.0_joint_8+0.3+0.1_1ep_16bz_3e5 \
-#     --model-version llava_verifier \
-#     --bf16 \
-#     --use_verifier \
-#     --mme-path /raid_sdd/zzy/data/MME \
-#     --output-path $output_path
+output_path=/raid_sdd/zzy/experiments/halle/train/exp15_internvl_chat_vit_6b_vicuna_7b_verifier_logits_scalar_frozen_1.0_joint_6+3+1_1ep_16bz_3e5/eval/mme2
+CUDA_VISIBLE_DEVICES=3 python eval.py \
+    --model-path /raid_sdd/zzy/experiments/halle/train/exp15_internvl_chat_vit_6b_vicuna_7b_verifier_logits_scalar_frozen_1.0_joint_6+3+1_1ep_16bz_3e5 \
+    --model-version llava_verifier \
+    --model-vision /raid_sdd/zzy/model/InternViT-6B-224px \
+    --bf16 \
+    --use_verifier \
+    --mme-path /raid_sdd/zzy/data/MME \
+    --output-path $output_path
+
+
 
 
 # # cd /raid_sdd/zzy/data/MME/eval_tool
@@ -26,14 +29,15 @@
 #     --results_dir $output_path/mme_evaluation/
 
 
-output_path=/raid_sdd/zzy/experiments/halle/train/exp14_llava_lora_joint_6+3+1+1.5k_layer32_1ep_16bz_3e5_merged/eval/mme
+# output_path=/raid_sdd/zzy/model/InternVL-Chat-ViT-6B-Vicuna-7B/eval/mme2
 
-CUDA_VISIBLE_DEVICES=3 python eval.py \
-    --model-path /raid_sdd/zzy/experiments/halle/train/exp14_llava_lora_joint_6+3+1+1.5k_layer32_1ep_16bz_3e5_merged \
-    --model-version llava \
-    --bf16 \
-    --mme-path /raid_sdd/zzy/data/MME \
-    --output-path $output_path
+# CUDA_VISIBLE_DEVICES=3 python eval.py \
+#     --model-path /raid_sdd/zzy/model/InternVL-Chat-ViT-6B-Vicuna-7B \
+#     --model-version llava \
+#     --model-vision /raid_sdd/zzy/model/InternViT-6B-224px \
+#     --bf16 \
+#     --mme-path /raid_sdd/zzy/data/MME \
+#     --output-path $output_path
 
 
 # cd /raid_sdd/zzy/data/MME/eval_tool
