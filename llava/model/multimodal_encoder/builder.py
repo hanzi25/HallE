@@ -7,6 +7,8 @@ def build_vision_tower(vision_tower_cfg, **kwargs):
     
     if vision_tower == "openai/clip-vit-large-patch14-336":
         vision_tower = "/raid_sdd/zzy/model/clip_vit_large_patch14_336"
+    elif vision_tower == "OpenGVLab/InternViT-6B-224px":
+        vision_tower = "/raid_sdd/zzy/model/InternViT-6B-224px"
 
     is_absolute_path_exists = os.path.exists(vision_tower)    
     if is_absolute_path_exists or vision_tower.startswith("openai") or vision_tower.startswith("laion"):

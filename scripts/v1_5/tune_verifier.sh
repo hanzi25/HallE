@@ -1,10 +1,10 @@
-deepspeed --include localhost:3 --master_port 25437 llava/train/train_verifier.py \
+deepspeed --include localhost:0 --master_port 25437 llava/train/train_verifier.py \
     --deepspeed ./scripts/zero3.json \
-    --model_name_or_path /raid_sdd/zzy/model/llava_1_5 \
+    --model_name_or_path /raid_sdd/zzy/model/InternVL-Chat-ViT-6B-Vicuna-7B \
     --version v1 \
     --data_path  /raid_sdd/zzy/data/halle/joint_caption_6k_qa_3k_reasoning_1k.json \
     --image_folder /raid_sdd/zzy/data/halle/coco/train2017 \
-    --vision_tower /raid_sdd/zzy/model/clip_vit_large_patch14_336 \
+    --vision_tower /raid_sdd/zzy/model/InternViT-6B-224px \
     --mm_projector_type mlp2x_gelu \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
@@ -12,10 +12,9 @@ deepspeed --include localhost:3 --master_port 25437 llava/train/train_verifier.p
     --alpha_type scalar \
     --freeze_alpha True \
     --logits_attend True \
-    --vision_layer 32 \
     --image_aspect_ratio pad \
     --bf16 True \
-    --output_dir /raid_sdd/zzy/experiments/halle/train/exp13_llava_verifier_logits_scalar_frozen_1.0_joint_6+3+1_layer32_1ep_16bz_3e5 \
+    --output_dir /raid_sdd/zzy/experiments/halle/train/exp15_internvl_chat_vit_6b_vicuna_7b_verifier_logits_scalar_frozen_1.0_joint_6+3+1_1ep_16bz_3e5 \
     --num_train_epochs 1 \
     --per_device_train_batch_size 16 \
     --per_device_eval_batch_size 4 \

@@ -97,8 +97,8 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
 
         self.logits_attend = config.logits_attend
 
-        self.vision_layer = config.vision_layer
-        
+        # self.vision_layer = config.vision_layer
+
         # Initialize weights and apply final processing
         self.post_init()
 
@@ -153,8 +153,11 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
             return_dict=return_dict
         )
 
+        # import pdb; pdb.set_trace()
+
         hidden_states = outputs[0]
-        vision_hidden_states = outputs.hidden_states[self.vision_layer]
+        # vision_hidden_states = outputs.hidden_states[self.vision_layer]
+        # vision_hidden_states = hidden_states
 
         # import pdb; pdb.set_trace()
 
@@ -168,7 +171,7 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
             
             if input_ids is None: # Training & First inference
                 system_len, image_len, user_query_len = length_group
-                output_vision_embeds = vision_hidden_states[:, system_len:system_len+image_len, :]
+                output_vision_embeds = hidden_states[:, system_len:system_len+image_len, :]
                 text_embeds = hidden_states[:, system_len+image_len:, :]
                 
                 self.tmp_new_vision_embeds = output_vision_embeds
@@ -211,7 +214,7 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
         else:
             if input_ids is None: # Training & First inference
                 system_len, image_len, user_query_len = length_group
-                output_vision_embeds = vision_hidden_states[:, system_len:system_len+image_len, :]
+                output_vision_embeds = hidden_states[:, system_len:system_len+image_len, :]
                 text_embeds = hidden_states[:, system_len+image_len:, :]
 
                 self.tmp_new_vision_embeds = output_vision_embeds
