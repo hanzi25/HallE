@@ -170,9 +170,9 @@ def eval_model(args):
     #      load image files and annotation
     # ========================================
     print("Start loading image files...")
-    if 'coco' in args.image_path:
+    if 'coco' in args.image_path.lower():
         image_files, image_ids = load_coco_evaluation_file(args)
-    elif 'vg' in args.image_path:
+    elif 'vg' in args.image_path.lower():
         image_files, image_ids = load_vg_evaluation_file(args)
     else:
         print("Not support such image path: ", args.image_path)
@@ -239,13 +239,13 @@ def eval_model(args):
 
     
 if __name__ == "__main__":
-    torch.manual_seed(2025)
-    torch.cuda.manual_seed(2025)
+    torch.manual_seed(2026)
+    torch.cuda.manual_seed(2026)
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-path", type=str, default="facebook/opt-350m")
     parser.add_argument("--model-base", type=str, default=None)
     parser.add_argument("--model-version", type=str, default="llava") # llava & llava_controller & llava_verifier
-    parser.add_argument("--model-vision", type=str, default="/raid_sdd/zzy/model/clip_vit_large_patch14_336")
+    parser.add_argument("--model-vision", type=str, default="openai/clip-vit-large-patch14-336")
     parser.add_argument("--bf16", action='store_true') # vision verifier needs bf16 (if train in bf16, inference need to be bf16 not fp16)
     parser.add_argument("--sigma", type=float, default=0)
     parser.add_argument("--alpha", type=float, default=1.0)

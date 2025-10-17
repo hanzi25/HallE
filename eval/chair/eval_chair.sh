@@ -1,7 +1,7 @@
 python chair.py \
-    --cap_file /raid_sdd/zzy/model/InternVL-Chat-ViT-6B-Vicuna-7B/eval/llava.jsonl \
+    --cap_file /work/zangzeyuan/exp16_llava_7b_lora_joint_6+3+1_1ep_16bz_3e5_merged/eval6/llava.jsonl \
     --image_id_key image_id \
     --caption_key caption \
     --cache chair.pkl \
-    --coco_path /raid_sdd/zzy/data/halle/coco/coco2014/annotations \
-    --save_path /raid_sdd/zzy/model/InternVL-Chat-ViT-6B-Vicuna-7B/eval/eval_CHAIR.json
+    --coco_path /archive/private/zangzeyuan/data/coco/annotations \
+    --save_path /work/zangzeyuan/exp16_llava_7b_lora_joint_6+3+1_1ep_16bz_3e5_merged/eval6/eval_CHAIR.json
