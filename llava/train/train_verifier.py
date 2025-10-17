@@ -875,7 +875,7 @@ def train():
             cache_dir=training_args.cache_dir,
             model_max_length=training_args.model_max_length,
             padding_side="right",
-            use_fast=True,
+            use_fast=True, # works with transformers==4.34.1 and tokenizers==0.14.1.
         )
 
     if model_args.version == "v0":

@@ -712,7 +712,8 @@ class LazySupervisedDataset(Dataset):
             # image does not exist in the data, but the model is multimodal
             crop_size = self.data_args.image_processor.crop_size
             data_dict['image'] = torch.zeros(3, crop_size['height'], crop_size['width'])
-        data_dict['postive'] = self.list_data_dict[i]['hall_factor']
+        # data_dict['postive'] = self.list_data_dict[i]['hall_factor']
+        data_dict['postive'] = -1
         return data_dict
 
 
@@ -867,7 +868,7 @@ def train():
             cache_dir=training_args.cache_dir,
             model_max_length=training_args.model_max_length,
             padding_side="right",
-            use_fast=False,
+            use_fast=True, # works with transformers==4.34.1 and tokenizers==0.14.1.
         )
 
     if model_args.version == "v0":
