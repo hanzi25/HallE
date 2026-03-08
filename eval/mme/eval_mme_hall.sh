@@ -13,7 +13,7 @@
 #     --save_name "mme_hall_evaluation_results.json" \
 #     --mme_hall
 
-output_path=/raid_sdd/zzy/experiments/halle/train/exp15_internvl_chat_vit_6b_vicuna_7b_verifier_logits_scalar_frozen_1.0_joint_6+3+1_1ep_16bz_3e5/eval/mme2
+output_path=/work/zangzeyuan/exp17_llava_13b_verifier_logits_scalar_frozen_1.0_sharegpt_9k_1ep_16bz_3e5/eval/mme
 
 # CUDA_VISIBLE_DEVICES=2 python eval.py \
 #     --model-path /raid_sdd/zzy/experiments/halle/train/exp10_llava_verifier_logits_scalar_frozen_1.0_sharegpt_9k_1ep_16bz_3e5 \

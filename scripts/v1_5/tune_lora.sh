@@ -1,6 +1,6 @@
 #!/bin/bash
-deepspeed --include localhost:3 --master_port 25438 llava/train/train.py \
-    --lora_enable True --lora_r 128 --lora_alpha 256\
+deepspeed --include localhost:1 --master_port 25439 llava/train/train.py \
+    --lora_enable True --lora_r 8 --lora_alpha 256\
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path liuhaotian/llava-v1.5-7b \
     --version v1 \
@@ -13,7 +13,7 @@ deepspeed --include localhost:3 --master_port 25438 llava/train/train.py \
     --mm_use_im_patch_token False \
     --image_aspect_ratio pad \
     --bf16 True \
-    --output_dir /work/zangzeyuan/exp16_llava_7b_lora_joint_6+3+1_1ep_16bz_3e5 \
+    --output_dir /work/zangzeyuan/exp18_llava_7b_lora_rank8_joint_6+3+1_1ep_16bz_3e5 \
     --num_train_epochs 1 \
     --per_device_train_batch_size 16 \
     --per_device_eval_batch_size 4 \
@@ -32,7 +32,3 @@ deepspeed --include localhost:3 --master_port 25438 llava/train/train.py \
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
     --lazy_preprocess True
-<<<<<<< HEAD
-
-=======
->>>>>>> fix

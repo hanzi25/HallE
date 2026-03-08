@@ -11,14 +11,14 @@
 
 
 
-output_path=/raid_sdd/zzy/experiments/halle/train/exp15_internvl_chat_vit_6b_vicuna_7b_verifier_logits_scalar_frozen_1.0_joint_6+3+1_1ep_16bz_3e5/eval/mme2
-CUDA_VISIBLE_DEVICES=3 python eval.py \
-    --model-path /raid_sdd/zzy/experiments/halle/train/exp15_internvl_chat_vit_6b_vicuna_7b_verifier_logits_scalar_frozen_1.0_joint_6+3+1_1ep_16bz_3e5 \
+output_path=/work/zangzeyuan/exp17_llava_13b_verifier_logits_scalar_frozen_1.0_sharegpt_9k_1ep_16bz_3e5/eval/mme
+CUDA_VISIBLE_DEVICES=6 python eval.py \
+    --model-path /work/zangzeyuan/exp17_llava_13b_verifier_logits_scalar_frozen_1.0_sharegpt_9k_1ep_16bz_3e5 \
     --model-version llava_verifier \
-    --model-vision /raid_sdd/zzy/model/InternViT-6B-224px \
+    --model-vision openai/clip-vit-large-patch14-336 \
     --bf16 \
     --use_verifier \
-    --mme-path /raid_sdd/zzy/data/MME \
+    --mme-path /home/zangzeyuan/data/MME \
     --output-path $output_path
 
 

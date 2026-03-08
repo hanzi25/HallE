@@ -233,10 +233,12 @@ class LlavaLlamaVerifierForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
 
             if self.alpha is None:
                 logits = text_logits + cross_logits
+                # logits = cross_logits
             elif isinstance(self.alpha, nn.Linear):
                 logits = text_logits + self.alpha(cross_logits)
             elif isinstance(self.alpha, nn.Parameter) or isinstance(self.alpha, float):
                 logits = text_logits + self.alpha * cross_logits
+                # logits = self.alpha * cross_logits
 
             # self.original_logits.append(text_logits[0])
             # self.revised_logits.append(cross_logits[0])

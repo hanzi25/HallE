@@ -1,8 +1,8 @@
 q_file=/home/zangzeyuan/data/AMBER/query_discriminative_prepared.jsonl
 answer_file_name=amber_discriminative
 
-output_path=/work/zangzeyuan/exp10_llava_verifier_logits_scalar_frozen_1.0_joint_6+3+1k_1ep_16bz_3e5/eval/amber_evaluation_discriminative2
-model_path=/work/zangzeyuan/exp10_llava_verifier_logits_scalar_frozen_1.0_joint_6+3+1k_1ep_16bz_3e5
+output_path=/work/zangzeyuan/llava-v1.5-7b/amber_evaluation_discriminative
+model_path=liuhaotian/llava-v1.5-7b
 
 if [ ! -d "$output_path" ]; then
   mkdir -p "$output_path"
@@ -16,7 +16,7 @@ fi
 
 CUDA_VISIBLE_DEVICES=7 python ../model_verifier.py \
      --model-path $model_path \
-     --model-version llava_verifier \
+     --model-version llava \
      --model-vision openai/clip-vit-large-patch14-336 \
      --bf16 \
      --use_verifier \

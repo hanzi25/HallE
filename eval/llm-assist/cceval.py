@@ -15,7 +15,7 @@ class BaseAPIWrapper(ABC):
         pass
 
 class OpenAIAPIWrapper(BaseAPIWrapper):
-    def __init__(self, caller_name="default", key_pool=None, temperature=0, model="gpt-4.1", time_out=30):
+    def __init__(self, caller_name="default", key_pool=None, temperature=0, model="gpt-5.2", time_out=30):
         self.key_pool = key_pool
         self.temperature = temperature
         self.model = model
